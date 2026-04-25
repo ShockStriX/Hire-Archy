@@ -22,5 +22,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid code" }, { status: 400 })
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, twoFactorVerified: true })
 }

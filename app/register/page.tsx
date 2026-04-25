@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { validateEmail, validatePassword } from "@/lib/validation";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -13,8 +14,20 @@ export default function RegisterPage() {
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setError("");
+
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+
+    const passwordError = validatePassword(password, email);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
     setLoading(true);
-    console.log("Submitting:", email, password); //Console debugging
 
     const res = await fetch("/api/register", {
       method: "POST",
@@ -22,11 +35,9 @@ export default function RegisterPage() {
       body: JSON.stringify({ email, password }),
     });
 
-    console.log("Response status:", res.status); //Console Debugging
 
     const data = await res.json();
 
-    console.log("Response data:", data); //Console Debugging
 
     if (!res.ok) {
       setError(data.error || "Something went wrong");
@@ -66,6 +77,13 @@ export default function RegisterPage() {
           >
             {loading ? "Registering..." : "Register"}
           </button>
+          <ul className="text-xs text-gray-500 list-disc list-inside">
+            <li>At least 8 characters</li>
+            <li>At least one capital letter</li>
+            <li>At least one lowercase letter</li>
+            <li>At least one special character</li>
+            <li>Cannot contain your email username</li>
+          </ul>
         </form>
 
         <p className="mt-4 text-center text-sm">
