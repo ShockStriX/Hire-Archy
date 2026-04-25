@@ -1,2 +1,2 @@
 # Hire-Archy
-A clooud hosted employee management and self service platform. 
+A cloud hosted employee management and self service platform. 
