@@ -1,13 +1,13 @@
-import { auth } from "@/auth"
-import { redirect } from "next/navigation"
-import Link from "next/link"
-import { prisma } from "@/lib/prisma"
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 
 export default async function HREmployeesPage() {
-  const session = await auth()
+  const session = await auth();
 
   if (!session || session.user.role !== "HR") {
-    redirect("/dashboard")
+    redirect("/dashboard");
   }
 
   const employees = await prisma.employee.findMany({
@@ -16,18 +16,18 @@ export default async function HREmployeesPage() {
         select: {
           email: true,
           role: true,
-        }
+        },
       },
       manager: {
         select: {
           name: true,
           surname: true,
           employeeNumber: true,
-        }
-      }
+        },
+      },
     },
-    orderBy: { employeeNumber: "asc" }
-  })
+    orderBy: { employeeNumber: "asc" },
+  });
 
   return (
     <div className="p-8">
@@ -51,13 +51,24 @@ export default async function HREmployeesPage() {
               <th className="text-left p-4">Email</th>
               <th className="text-left p-4">Manager</th>
               <th className="text-left p-4">Role</th>
+              <th className="text-left p-4">Status</th>
             </tr>
           </thead>
           <tbody>
             {employees.map((emp) => (
-              <tr key={emp.id} className="border-t hover:bg-gray-50">
+              <tr
+                key={emp.id}
+                className="border-t hover:bg-gray-50 cursor-pointer"
+              >
                 <td className="p-4">{emp.employeeNumber}</td>
-                <td className="p-4">{emp.name} {emp.surname}</td>
+                <td className="p-4">
+                  <Link
+                    href={`/hr/employees/${emp.id}`}
+                    className="hover:underline"
+                  >
+                    {emp.name} {emp.surname}
+                  </Link>
+                </td>
                 <td className="p-4">{emp.position}</td>
                 <td className="p-4">{emp.user.email}</td>
                 <td className="p-4">
@@ -66,6 +77,13 @@ export default async function HREmployeesPage() {
                     : "—"}
                 </td>
                 <td className="p-4">{emp.user.role}</td>
+                <td className="p-4">
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${emp.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                  >
+                    {emp.isActive ? "Active" : "Inactive"}
+                  </span>
+                </td>
               </tr>
             ))}
             {employees.length === 0 && (
@@ -79,5 +97,5 @@ export default async function HREmployeesPage() {
         </table>
       </div>
     </div>
-  )
+  );
 }
