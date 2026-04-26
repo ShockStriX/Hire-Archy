@@ -1,7 +1,7 @@
-import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
-import { prisma } from "@/lib/prisma"
-import bcrypt from "bcryptjs"
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -12,48 +12,68 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        if (!credentials?.email || !credentials?.password) return null;
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
-          select: { id: true, email: true, password: true, twoFactorEnabled: true }
-        })
+          select: {
+            id: true,
+            email: true,
+            password: true,
+            twoFactorEnabled: true,
+            role: true,
+            firstLogin: true,
+          },
+        });
 
-        if (!user) return null
+        if (!user) return null;
 
         const passwordMatch = await bcrypt.compare(
           credentials.password as string,
-          user.password
-        )
+          user.password,
+        );
 
-        if (!passwordMatch) return null
+        if (!passwordMatch) return null;
 
-        return { 
-          id: user.id, 
+        return {
+          id: user.id,
           email: user.email,
           twoFactorEnabled: user.twoFactorEnabled,
-          twoFactorVerified: false // Always false on initial login
-        }
+          twoFactorVerified: false,
+          role: user.role,
+          firstLogin: user.firstLogin,
+        };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
-        token.twoFactorEnabled = user.twoFactorEnabled
-        token.twoFactorVerified = false
+        token.twoFactorEnabled = user.twoFactorEnabled;
+        token.twoFactorVerified = false;
+        token.role = user.role;
+        token.firstLogin = user.firstLogin;
       }
-      // Allow updating twoFactorVerified via useSession update
-      if (trigger === "update" && session?.twoFactorVerified) {
-        token.twoFactorVerified = true
+      if (trigger === "update") {
+        if (session?.twoFactorVerified) {
+          token.twoFactorVerified = true;
+        }
+        if (session?.firstLogin === false) {
+          token.firstLogin = false;
+        }
+        if (session?.twoFactorEnabled) {
+          token.twoFactorEnabled = true;
+        }
       }
-      return token
+      return token;
     },
     async session({ session, token }) {
-      session.user.twoFactorEnabled = token.twoFactorEnabled as boolean
-      session.user.twoFactorVerified = token.twoFactorVerified as boolean
-      return session
-    }
+      session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
+      session.user.twoFactorVerified = token.twoFactorVerified as boolean;
+      session.user.role = token.role as string;
+      session.user.firstLogin = token.firstLogin as boolean;
+      return session;
+    },
   },
   pages: {
     signIn: "/login",
@@ -61,4 +81,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
     strategy: "jwt",
   },
-})
+});

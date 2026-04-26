@@ -17,12 +17,14 @@ interface UserCardProps {
   email: string;
   avatarUrl?: string | null;
   bannerUrl?: string | null;
+  role?: string | null;
 }
 
 export default function UserCard({
   email,
   avatarUrl,
   bannerUrl,
+  role,
 }: UserCardProps) {
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState(
     avatarUrl || getGravatarUrl(email),
@@ -75,7 +77,7 @@ export default function UserCard({
     });
 
     const data = await res.json();
-    
+
     if (!res.ok) {
       setError(data.error || "Banner upload failed");
     } else {
@@ -146,7 +148,7 @@ export default function UserCard({
         </div>
 
         <h2 className="text-lg font-bold">{email}</h2>
-        <p className="text-sm text-gray-500">Member</p>
+        <p className="text-sm text-gray-500">{role === "HR" ? "HR Representative" : "Employee"}</p>
 
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>

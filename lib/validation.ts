@@ -30,3 +30,26 @@ export function validatePassword(
 
   return null;
 }
+
+export function generateInitialPassword(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz"
+  const upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  const numbers = "0123456789"
+  const special = "!@#$%^&*"
+
+  const randomLower = chars[Math.floor(Math.random() * chars.length)]
+  const randomUpper = upperChars[Math.floor(Math.random() * upperChars.length)]
+  const randomNumber = numbers[Math.floor(Math.random() * numbers.length)]
+  const randomSpecial = special[Math.floor(Math.random() * special.length)]
+  const randomExtra = Array.from({ length: 6 }, () =>
+    chars[Math.floor(Math.random() * chars.length)]
+  ).join("")
+
+  // Shuffle the password
+  const password = (randomLower + randomUpper + randomNumber + randomSpecial + randomExtra)
+    .split("")
+    .sort(() => Math.random() - 0.5)
+    .join("")
+
+  return password
+}

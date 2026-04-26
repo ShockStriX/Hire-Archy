@@ -1,39 +1,47 @@
-"use client"
+"use client";
 
-import { Suspense, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 
 function VerifyTwoFactorContent() {
-  const [token, setToken] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const email = searchParams.get("email")
-  const { update } = useSession()
+  const [token, setToken] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email");
+  const { update } = useSession();
 
   const handleVerify = async () => {
-    setError("")
-    setLoading(true)
+    setError("");
+    setLoading(true);
 
     const res = await fetch("/api/2fa/check", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, token }),
-    })
+    });
 
-    const data = await res.json()
+    const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error || "Invalid code")
-      setLoading(false)
+      setError(data.error || "Invalid code");
+      setLoading(false);
     } else {
-      // Update the session to mark 2FA as verified
-      await update({ twoFactorVerified: true })
-      router.push("/dashboard")
+      await update({ twoFactorVerified: true });
+      // Redirect based on role
+      const sessionRes = await fetch("/api/auth/session");
+      const sessionData = await sessionRes.json();
+
+      if (sessionData?.user?.role === "HR") {
+        router.push("/hr/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
     }
-  }
+  }; // ← handleVerify ends here
 
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -62,15 +70,28 @@ function VerifyTwoFactorContent() {
         >
           {loading ? "Verifying..." : "Verify"}
         </button>
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="text-sm text-gray-500 hover:underline mt-4"
+        >
+          Cancel
+        </button>
       </div>
     </div>
-  )
-}
+  );
+} // ← VerifyTwoFactorContent ends here
 
 export default function VerifyTwoFactorPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          Loading...
+        </div>
+      }
+    >
       <VerifyTwoFactorContent />
     </Suspense>
-  )
+  );
 }

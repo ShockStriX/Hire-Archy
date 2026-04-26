@@ -16,7 +16,7 @@ const getUserData = unstable_cache(
     });
   },
   ["user-data"],
-  { revalidate: 60, tags: ["user-data"]},
+  { revalidate: 60, tags: ["user-data"] },
 );
 
 export default async function DashboardPage() {
@@ -24,6 +24,9 @@ export default async function DashboardPage() {
 
   if (!session?.user?.email) {
     redirect("/login");
+  }
+  if (session.user.role === "HR") {
+    redirect("/hr/dashboard");
   }
 
   const user = await getUserData(session.user.email);
@@ -38,6 +41,7 @@ export default async function DashboardPage() {
         email={session.user.email}
         avatarUrl={user?.avatarUrl}
         bannerUrl={user?.bannerUrl}
+        role={session.user.role}
       />
     </div>
   );

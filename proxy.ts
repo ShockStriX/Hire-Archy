@@ -1,47 +1,62 @@
-import { auth } from "@/auth"
-import { NextResponse } from "next/server"
+import { auth } from "@/auth";
+import { NextResponse } from "next/server";
 
 export default auth((req) => {
-  const isLoggedIn = !!req.auth
-  const twoFactorVerified = req.auth?.user?.twoFactorVerified
-  const twoFactorEnabled = req.auth?.user?.twoFactorEnabled
-  const { pathname } = req.nextUrl
+  const isLoggedIn = !!req.auth;
+  const twoFactorVerified = req.auth?.user?.twoFactorVerified;
+  const twoFactorEnabled = req.auth?.user?.twoFactorEnabled;
+  const firstLogin = req.auth?.user?.firstLogin;
+  const role = req.auth?.user?.role;
+  const { pathname } = req.nextUrl;
 
-  const isAuthPage = pathname.startsWith("/login") ||
-    pathname.startsWith("/register") ||
+  const isAuthPage = pathname.startsWith("/login");
+
+  const isOnboardingPage =
+    pathname.startsWith("/change-password") ||
     pathname.startsWith("/2fa-setup") ||
-    pathname.startsWith("/verify-2fa")
+    pathname.startsWith("/verify-2fa");
 
   // Not logged in, redirect to login
-  if (!isLoggedIn && !isAuthPage) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl))
+  if (!isLoggedIn && !isAuthPage && !isOnboardingPage) {
+    return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
 
-  if (isLoggedIn && !isAuthPage) {
-    // 2FA not set up at all, redirect to setup
+  if (isLoggedIn && !isAuthPage && !isOnboardingPage) {
+    // First login - force password change
+    if (firstLogin) {
+      return NextResponse.redirect(
+        new URL(`/change-password?email=${req.auth?.user?.email}`, req.nextUrl),
+      );
+    }
+    // 2FA not set up
     if (!twoFactorEnabled) {
       return NextResponse.redirect(
-        new URL(`/2fa-setup?email=${req.auth?.user?.email}`, req.nextUrl)
-      )
+        new URL(`/2fa-setup?email=${req.auth?.user?.email}`, req.nextUrl),
+      );
     }
-    // 2FA set up but not verified, redirect to verify
+    // 2FA not verified
     if (twoFactorEnabled && !twoFactorVerified) {
       return NextResponse.redirect(
-        new URL(`/verify-2fa?email=${req.auth?.user?.email}`, req.nextUrl)
-      )
+        new URL(`/verify-2fa?email=${req.auth?.user?.email}`, req.nextUrl),
+      );
+    }
+    // Block employees from HR pages
+    if (pathname.startsWith("/hr") && role !== "HR") {
+      return NextResponse.redirect(new URL("/hr/dashboard", req.nextUrl));
     }
   }
 
-  // Logged in and 2FA verified, redirect away from auth pages
+  // Logged in and fully verified, redirect away from login
   if (isLoggedIn && isAuthPage && twoFactorVerified) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl))
+    if (role === "HR") {
+      return NextResponse.redirect(new URL("/hr/employees", req.nextUrl));
+    }
+    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   }
 
-  return NextResponse.next()
-})
+  return NextResponse.next();
+});
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
-  ],
-}
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+};

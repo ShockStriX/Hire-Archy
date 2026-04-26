@@ -11,14 +11,46 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+enum Role {
+  HR 
+  EMPLOYEE
+}
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  password    String
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
   twoFactorSecret   String?
-  twoFactorEnabled  Boolean @default(false)
-  avatarUrl     String?
-  bannerUrl     String?
-  createdAt   DateTime @default(now())
+  twoFactorEnabled  Boolean   @default(false)
+  avatarUrl         String?
+  bannerUrl         String?
+  role              Role      @default(EMPLOYEE)
+  firstLogin        Boolean   @default(true)
+  employee          Employee?
+  createdAt         DateTime  @default(now())
+}
+
+model Employee {
+  id                String    @id @default(cuid())
+  employeeNumber    String    @unique
+  name              String
+  surname           String
+  birthDate         DateTime
+  gross_salary     Decimal
+  position          String
+
+  managerId         String?
+  manager           Employee?  @relation("ReportingLine", fields: [managerId], references: [id])
+  subordinates      Employee[] @relation("ReportingLine")
+
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id])
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model EmployeeNumberSequence {
+  id            Int    @id @default(autoincrement())
+  lastNumber    Int    @default(0)
 }
