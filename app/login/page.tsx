@@ -1,32 +1,51 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { validateEmail } from "@/lib/validation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
 
-const handleSubmit = async (e?: React.FormEvent) => {
-  e?.preventDefault()
-  setError("")
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setError("");
 
-  const result = await signIn("credentials", {
-    email,
-    password,
-    redirect: false,
-  })
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
 
-  if (result?.error) {
-    setError("Invalid email or password")
-  } else {
-    // Redirect to 2FA verification instead of dashboard
-    router.push(`/verify-2fa?email=${encodeURIComponent(email)}`)
-  }
-}
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setError("Invalid email or password");
+      return;
+    }
+
+    const res = await fetch("/api/2fa/status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await res.json();
+
+    if (!data.twoFactorEnabled) {
+      router.push(`/2fa-setup?email=${encodeURIComponent(email)}`);
+    } else {
+      router.push(`/verify-2fa?email=${encodeURIComponent(email)}`);
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -50,20 +69,22 @@ const handleSubmit = async (e?: React.FormEvent) => {
             onChange={(e) => setPassword(e.target.value)}
             className="border rounded-lg p-2 w-full"
           />
-          <button type="submit" className="bg-blue-600 text-white rounded-lg p-2 w-full">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="bg-blue-600 text-white rounded-lg p-2 w-full"
+          >
             Sign In
           </button>
         </form>
 
-        {/* ADD THIS BELOW THE FORM */}
         <p className="mt-4 text-center text-sm">
           Don't have an account?{" "}
           <a href="/register" className="text-blue-600 hover:underline">
             Register
           </a>
         </p>
-
       </div>
     </div>
-  )
+  );
 }
