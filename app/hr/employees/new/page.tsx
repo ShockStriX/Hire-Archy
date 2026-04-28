@@ -1,49 +1,52 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Employee {
-  id: string
-  name: string
-  surname: string
-  position: string
-  employeeNumber: string
+  id: string;
+  name: string;
+  surname: string;
+  position: string;
+  employeeNumber: string;
+  isActive: boolean;
 }
 
 interface CreatedEmployee {
-  employeeNumber: string
-  initialPassword: string
-  email: string
+  employeeNumber: string;
+  initialPassword: string;
+  email: string;
+  role: "EMPLOYEE" | "MANAGER" | "HR";
 }
 
 export default function NewEmployeePage() {
-  const [email, setEmail] = useState("")
-  const [name, setName] = useState("")
-  const [surname, setSurname] = useState("")
-  const [birthDate, setBirthDate] = useState("")
-  const [grossSalary, setGrossSalary] = useState("")
-  const [position, setPosition] = useState("")
-  const [managerId, setManagerId] = useState("")
-  const [managers, setManagers] = useState<Employee[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [created, setCreated] = useState<CreatedEmployee | null>(null)
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [grossSalary, setGrossSalary] = useState("");
+  const [position, setPosition] = useState("");
+  const [managerId, setManagerId] = useState("");
+  const [role, setRole] = useState<"EMPLOYEE" | "MANAGER" | "HR">("EMPLOYEE");
+  const [managers, setManagers] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [created, setCreated] = useState<CreatedEmployee | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     // Fetch existing employees for manager dropdown
     const fetchEmployees = async () => {
-      const res = await fetch("/api/hr/employees")
-      const data = await res.json()
-      setManagers(data.employees || [])
-    }
-    fetchEmployees()
-  }, [])
+      const res = await fetch("/api/hr/employees");
+      const data = await res.json();
+      setManagers(data.employees?.filter((e: Employee) => e.isActive) || []);
+    };
+    fetchEmployees();
+  }, []);
 
   const handleSubmit = async () => {
-    setError("")
-    setLoading(true)
+    setError("");
+    setLoading(true);
 
     const res = await fetch("/api/hr/employees/create", {
       method: "POST",
@@ -56,27 +59,40 @@ export default function NewEmployeePage() {
         gross_salary: grossSalary,
         position,
         managerId: managerId || null,
+        role,
       }),
-    })
+    });
 
-    const data = await res.json()
+    const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error || "Something went wrong")
-      setLoading(false)
+      setError(data.error || "Something went wrong");
+      setLoading(false);
     } else {
-      setCreated(data)
-      setLoading(false)
+      setCreated(data);
+      setLoading(false);
     }
-  }
+  };
 
   if (created) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="w-full max-w-md p-8 rounded-xl shadow-md">
-          <h1 className="text-2xl font-bold mb-2 text-green-600">Employee Created!</h1>
+          <h1 className="text-2xl font-bold mb-2 text-green-600">
+            {created.role === "HR"
+              ? "HR Account Created!"
+              : created.role === "MANAGER"
+                ? "Manager Account Created!"
+                : "Employee Created!"}
+          </h1>
           <p className="text-gray-500 mb-6">
-            Please share the following credentials with the employee securely.
+            Please share the following credentials with the{" "}
+            {created.role === "HR"
+              ? "HR administrator"
+              : created.role === "MANAGER"
+                ? "manager"
+                : "employee"}{" "}
+            securely.
           </p>
 
           <div className="bg-gray-50 rounded-lg p-4 mb-6 flex flex-col gap-2">
@@ -100,9 +116,11 @@ export default function NewEmployeePage() {
 
           <div className="flex gap-2">
             <button
-              onClick={() => navigator.clipboard.writeText(
-                `Employee Number: ${created.employeeNumber}\nEmail: ${created.email}\nTemporary Password: ${created.initialPassword}`
-              )}
+              onClick={() =>
+                navigator.clipboard.writeText(
+                  `Employee Number: ${created.employeeNumber}\nEmail: ${created.email}\nTemporary Password: ${created.initialPassword}`,
+                )
+              }
               className="bg-gray-200 text-gray-800 rounded-lg px-4 py-2 text-sm w-full"
             >
               Copy Credentials
@@ -116,13 +134,13 @@ export default function NewEmployeePage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-md p-8 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold mb-6">Create New Employee</h1>
+        <h1 className="text-2xl font-bold mb-6">Create New Account</h1>
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
@@ -170,14 +188,27 @@ export default function NewEmployeePage() {
             className="border rounded-lg p-2 w-full"
           />
           <select
+            value={role}
+            onChange={(e) =>
+              setRole(e.target.value as "EMPLOYEE" | "MANAGER" | "HR")
+            }
+            className="border rounded-lg p-2 w-full"
+          >
+            <option value="EMPLOYEE">Employee</option>
+            <option value="MANAGER">Manager</option>
+            <option value="HR">HR Administrator</option>
+          </select>
+
+          <select
             value={managerId}
             onChange={(e) => setManagerId(e.target.value)}
             className="border rounded-lg p-2 w-full"
           >
-            <option value="">No Manager (e.g. CEO)</option>
+            <option value="">No Manager</option>
             {managers.map((manager) => (
               <option key={manager.id} value={manager.id}>
-                {manager.name} {manager.surname} - {manager.position} ({manager.employeeNumber})
+                {manager.name} {manager.surname} - {manager.position} (
+                {manager.employeeNumber})
               </option>
             ))}
           </select>
@@ -188,7 +219,13 @@ export default function NewEmployeePage() {
             disabled={loading}
             className="bg-blue-600 text-white rounded-lg p-2 w-full disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Employee"}
+            {loading
+              ? "Creating..."
+              : role === "HR"
+                ? "Create HR Account"
+                : role === "MANAGER"
+                  ? "Create Manager Account"
+                  : "Create Employee"}
           </button>
 
           <button
@@ -201,5 +238,5 @@ export default function NewEmployeePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -14,19 +14,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { 
-      email, 
-      name, 
-      surname, 
-      birthDate, 
-      gross_salary, 
-      position, 
-      managerId 
+    const {
+      email,
+      name,
+      surname,
+      birthDate,
+      gross_salary,
+      position,
+      managerId,
+      role,
     } = await req.json()
 
     if (!email || !name || !surname || !birthDate || !gross_salary || !position) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
+
+    const assignedRole = role === "HR" ? "HR" : role === "MANAGER" ? "MANAGER" : "EMPLOYEE"
 
     // Check if email already exists
     const existing = await prisma.user.findUnique({ where: { email } })
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
         data: {
           email,
           password: hashedPassword,
-          role: "EMPLOYEE",
+          role: assignedRole,
           firstLogin: true,
         }
       })
@@ -71,6 +74,7 @@ export async function POST(req: Request) {
       employeeNumber: result.employee.employeeNumber,
       initialPassword,
       email,
+      role: assignedRole,
     })
 
   } catch (error) {

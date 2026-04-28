@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import crypto from "crypto";
 import { getGradientFromEmail } from "@/lib/gradient";
@@ -11,6 +12,7 @@ function getGravatarUrl(email: string, size: number = 200) {
     .createHash("md5")
     .update(email.trim().toLowerCase())
     .digest("hex");
+
   return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
 }
 
@@ -40,7 +42,7 @@ interface Employee {
   }[];
   user: {
     email: string;
-    role: string;
+    role: "HR" | "MANAGER" | "EMPLOYEE";
     avatarUrl: string | null;
     bannerUrl: string | null;
   };
@@ -56,42 +58,80 @@ export default function EmployeeProfilePage() {
   const [success, setSuccess] = useState("");
   const [resetPassword, setResetPassword] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
+
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
-  // Edit form state
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [birthDay, setBirthDay] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthYear, setBirthYear] = useState("");
   const [grossSalary, setGrossSalary] = useState("");
   const [position, setPosition] = useState("");
   const [managerId, setManagerId] = useState("");
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState<"HR" | "MANAGER" | "EMPLOYEE">("EMPLOYEE");
+  const [email, setEmail] = useState("");
+
+  const updateBirthDate = (day: string, month: string, year: string) => {
+    if (!day || !month || !year) return;
+
+    const date = new Date(
+      `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`,
+    );
+
+    setBirthDate(date.toISOString().split("T")[0]);
+  };
+
+  const refreshEmployee = async () => {
+    const res = await fetch(`/api/hr/employees/${id}`);
+    const data = await res.json();
+
+    if (res.ok) {
+      setEmployee(data.employee);
+    }
+
+    return data.employee;
+  };
 
   useEffect(() => {
     const fetchEmployee = async () => {
       const res = await fetch(`/api/hr/employees/${id}`);
       const data = await res.json();
+
       if (res.ok) {
-        setEmployee(data.employee);
-        setName(data.employee.name);
-        setSurname(data.employee.surname);
-        setBirthDate(
-          new Date(data.employee.birthDate).toISOString().split("T")[0],
-        );
-        setGrossSalary(data.employee.gross_salary.toString());
-        setPosition(data.employee.position);
-        setManagerId(data.employee.managerId || "");
-        setRole(data.employee.user.role);
+        const emp: Employee = data.employee;
+
+        setEmployee(emp);
+        setName(emp.name);
+        setSurname(emp.surname);
+
+        const date = new Date(emp.birthDate);
+        setBirthDay(String(date.getDate()));
+        setBirthMonth(String(date.getMonth() + 1));
+        setBirthYear(String(date.getFullYear()));
+        setBirthDate(date.toISOString().split("T")[0]);
+
+        setGrossSalary(emp.gross_salary.toString());
+        setPosition(emp.position);
+        setManagerId(emp.managerId || "");
+        setRole(emp.user.role);
+        setEmail(emp.user.email);
       }
+
       setLoading(false);
     };
 
     const fetchManagers = async () => {
       const res = await fetch("/api/hr/employees");
       const data = await res.json();
-      setManagers(data.employees?.filter((e: Employee) => e.id !== id) || []);
+
+      setManagers(
+        data.employees?.filter((e: Employee) => e.id !== id && e.isActive) ||
+          [],
+      );
     };
 
     fetchEmployee();
@@ -99,6 +139,11 @@ export default function EmployeeProfilePage() {
   }, [id]);
 
   const handleSave = async () => {
+    if (!employee?.isActive) {
+      setError("Cannot edit a deactivated employee.");
+      return;
+    }
+
     setSaving(true);
     setError("");
     setSuccess("");
@@ -114,6 +159,7 @@ export default function EmployeeProfilePage() {
         position,
         managerId: managerId || null,
         role,
+        email,
       }),
     });
 
@@ -124,19 +170,23 @@ export default function EmployeeProfilePage() {
     } else {
       setSuccess("Employee updated successfully!");
       setEditing(false);
-      const refreshRes = await fetch(`/api/hr/employees/${id}`);
-      const refreshData = await refreshRes.json();
-      setEmployee(refreshData.employee);
+      await refreshEmployee();
     }
+
     setSaving(false);
   };
 
-  // ← handleResetPassword is now correctly outside handleSave
   const handleResetPassword = async () => {
-    if (
-      !confirm(`Are you sure you want to reset ${employee?.name}'s password?`)
-    )
+    if (!employee?.isActive) {
+      setError("Cannot reset password for a deactivated employee.");
       return;
+    }
+
+    if (
+      !confirm(`Are you sure you want to reset ${employee.name}'s password?`)
+    ) {
+      return;
+    }
 
     setResetting(true);
     setError("");
@@ -152,40 +202,83 @@ export default function EmployeeProfilePage() {
     } else {
       setResetPassword(data.newPassword);
     }
+
     setResetting(false);
   };
 
   const handleDelete = async () => {
+    if (!employee) return;
+
+    const action = employee.isActive ? "deactivate" : "reactivate";
+
+    if (employee.isActive && employee.subordinates.length > 0) {
+      setError(
+        `Cannot deactivate ${employee.name} ${employee.surname} because they have ${employee.subordinates.length} direct report(s). Please reassign them first.`,
+      );
+      return;
+    }
+
     if (
       !confirm(
-        `Are you sure you want to deactivate ${employee?.name} ${employee?.surname}?`,
+        `Are you sure you want to ${action} ${employee.name} ${employee.surname}?`,
       )
-    )
+    ) {
       return;
+    }
+
+    setError("");
+    setSuccess("");
 
     const res = await fetch(`/api/hr/employees/${id}`, {
       method: "DELETE",
     });
 
     if (res.ok) {
-      router.push("/hr/employees");
+      const refreshed = await refreshEmployee();
+      setSuccess(
+        `Employee ${refreshed?.isActive ? "reactivated" : "deactivated"} successfully!`,
+      );
+      setEditing(false);
     } else {
-      setError("Failed to deactivate employee");
+      const data = await res.json();
+      setError(data.error || `Failed to ${action} employee`);
     }
   };
 
-  if (loading)
+  const handleCancelEdit = () => {
+    if (!employee) return;
+
+    setEditing(false);
+    setName(employee.name);
+    setSurname(employee.surname);
+    setGrossSalary(employee.gross_salary.toString());
+    setPosition(employee.position);
+    setManagerId(employee.managerId || "");
+    setRole(employee.user.role);
+    setEmail(employee.user.email);
+
+    const date = new Date(employee.birthDate);
+    setBirthDay(String(date.getDate()));
+    setBirthMonth(String(date.getMonth() + 1));
+    setBirthYear(String(date.getFullYear()));
+    setBirthDate(date.toISOString().split("T")[0]);
+  };
+
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         Loading...
       </div>
     );
-  if (!employee)
+  }
+
+  if (!employee) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         Employee not found
       </div>
     );
+  }
 
   const avatarUrl =
     employee.user.avatarUrl || getGravatarUrl(employee.user.email);
@@ -193,7 +286,6 @@ export default function EmployeeProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto p-8">
-      {/* Banner & Avatar */}
       <div className="rounded-xl overflow-hidden shadow-lg border mb-8">
         <div
           className="relative w-full h-40"
@@ -225,30 +317,37 @@ export default function EmployeeProfilePage() {
                 className="object-cover"
               />
             </div>
+
             <div className="flex gap-2 mb-2">
               {!editing ? (
                 <>
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={handleResetPassword}
-                    disabled={resetting}
-                    className="bg-yellow-500 text-white rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-                  >
-                    {resetting ? "Resetting..." : "Reset Password"}
-                  </button>
                   {employee.isActive && (
-                    <button
-                      onClick={handleDelete}
-                      className="bg-red-600 text-white rounded-lg px-4 py-2 text-sm"
-                    >
-                      Deactivate
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setEditing(true)}
+                        className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={handleResetPassword}
+                        disabled={resetting}
+                        className="bg-yellow-500 text-white rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+                      >
+                        {resetting ? "Resetting..." : "Reset Password"}
+                      </button>
+                    </>
                   )}
+
+                  <button
+                    onClick={handleDelete}
+                    className={`${
+                      employee.isActive ? "bg-red-600" : "bg-green-600"
+                    } text-white rounded-lg px-4 py-2 text-sm`}
+                  >
+                    {employee.isActive ? "Deactivate" : "Reactivate"}
+                  </button>
                 </>
               ) : (
                 <>
@@ -259,8 +358,9 @@ export default function EmployeeProfilePage() {
                   >
                     {saving ? "Saving..." : "Save"}
                   </button>
+
                   <button
-                    onClick={() => setEditing(false)}
+                    onClick={handleCancelEdit}
                     className="bg-gray-200 text-gray-800 rounded-lg px-4 py-2 text-sm"
                   >
                     Cancel
@@ -272,7 +372,8 @@ export default function EmployeeProfilePage() {
 
           {!employee.isActive && (
             <div className="bg-red-50 text-red-600 rounded-lg px-4 py-2 text-sm mb-4">
-              This employee has been deactivated
+              This employee has been deactivated. Editing and password reset are
+              disabled.
             </div>
           )}
 
@@ -287,7 +388,16 @@ export default function EmployeeProfilePage() {
 
             <div>
               <p className="text-xs text-gray-500 mb-1">Email</p>
-              <p className="font-medium">{employee.user.email}</p>
+              {editing ? (
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="border rounded-lg p-2 w-full text-sm"
+                />
+              ) : (
+                <p className="font-medium">{employee.user.email}</p>
+              )}
             </div>
 
             <div>
@@ -321,12 +431,71 @@ export default function EmployeeProfilePage() {
             <div>
               <p className="text-xs text-gray-500 mb-1">Birth Date</p>
               {editing ? (
-                <input
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="border rounded-lg p-2 w-full text-sm"
-                />
+                <div className="flex gap-2">
+                  <select
+                    value={birthDay}
+                    onChange={(e) => {
+                      setBirthDay(e.target.value);
+                      updateBirthDate(e.target.value, birthMonth, birthYear);
+                    }}
+                    className="border rounded-lg p-2 w-full text-sm"
+                  >
+                    <option value="">Day</option>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                      <option key={d} value={String(d)}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={birthMonth}
+                    onChange={(e) => {
+                      setBirthMonth(e.target.value);
+                      updateBirthDate(birthDay, e.target.value, birthYear);
+                    }}
+                    className="border rounded-lg p-2 w-full text-sm"
+                  >
+                    <option value="">Month</option>
+                    {[
+                      "January",
+                      "February",
+                      "March",
+                      "April",
+                      "May",
+                      "June",
+                      "July",
+                      "August",
+                      "September",
+                      "October",
+                      "November",
+                      "December",
+                    ].map((m, i) => (
+                      <option key={m} value={String(i + 1)}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={birthYear}
+                    onChange={(e) => {
+                      setBirthYear(e.target.value);
+                      updateBirthDate(birthDay, birthMonth, e.target.value);
+                    }}
+                    className="border rounded-lg p-2 w-full text-sm"
+                  >
+                    <option value="">Year</option>
+                    {Array.from(
+                      { length: 80 },
+                      (_, i) => new Date().getFullYear() - i,
+                    ).map((y) => (
+                      <option key={y} value={String(y)}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               ) : (
                 <p className="font-medium">
                   {new Date(employee.birthDate).toLocaleDateString()}
@@ -369,10 +538,11 @@ export default function EmployeeProfilePage() {
               {editing ? (
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value)}
+                  onChange={(e) => setRole(e.target.value as "HR" | "MANAGER" | "EMPLOYEE")}
                   className="border rounded-lg p-2 w-full text-sm"
                 >
                   <option value="EMPLOYEE">Employee</option>
+                  <option value="MANAGER">Manager</option>
                   <option value="HR">HR</option>
                 </select>
               ) : (
@@ -388,7 +558,7 @@ export default function EmployeeProfilePage() {
                   onChange={(e) => setManagerId(e.target.value)}
                   className="border rounded-lg p-2 w-full text-sm"
                 >
-                  <option value="">No Manager (e.g. CEO)</option>
+                  <option value="">No Manager</option>
                   {managers.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name} {m.surname} - {m.position} ({m.employeeNumber})
@@ -407,12 +577,31 @@ export default function EmployeeProfilePage() {
             {employee.subordinates.length > 0 && (
               <div className="md:col-span-2">
                 <p className="text-xs text-gray-500 mb-1">Direct Reports</p>
+
+                {!employee.isActive && (
+                  <div className="bg-yellow-50 text-yellow-700 rounded-lg px-3 py-2 text-xs mb-2">
+                    ⚠️ These employees need to be reassigned to a new manager.
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-1">
                   {employee.subordinates.map((sub) => (
-                    <p key={sub.id} className="font-medium text-sm">
-                      {sub.name} {sub.surname} - {sub.position} (
-                      {sub.employeeNumber})
-                    </p>
+                    <div
+                      key={sub.id}
+                      className="flex items-center justify-between"
+                    >
+                      <p className="font-medium text-sm">
+                        {sub.name} {sub.surname} - {sub.position} (
+                        {sub.employeeNumber})
+                      </p>
+
+                      <Link
+                        href={`/hr/employees/${sub.id}`}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        View
+                      </Link>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -421,13 +610,13 @@ export default function EmployeeProfilePage() {
         </div>
       </div>
 
-      {/* Reset Password Modal */}
       {resetPassword && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-xl">
             <h2 className="text-xl font-bold mb-2">
               Password Reset Successfully
             </h2>
+
             <p className="text-gray-500 mb-6">
               Share these credentials with the employee securely. They will be
               prompted to change their password on next login.
@@ -438,6 +627,7 @@ export default function EmployeeProfilePage() {
                 <p className="text-xs text-gray-500">Email</p>
                 <p className="font-bold">{employee.user.email}</p>
               </div>
+
               <div>
                 <p className="text-xs text-gray-500">Temporary Password</p>
                 <p className="font-bold font-mono">{resetPassword}</p>
@@ -460,6 +650,7 @@ export default function EmployeeProfilePage() {
               >
                 Copy Credentials
               </button>
+
               <button
                 onClick={() => setResetPassword(null)}
                 className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm w-full"

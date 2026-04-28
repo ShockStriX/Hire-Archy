@@ -9,6 +9,7 @@ export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const isHR = session?.user?.role === "HR";
+  const isManager = session?.user?.role === "MANAGER";
 
   const hideNavbar =
     pathname.startsWith("/login") ||
@@ -19,7 +20,7 @@ export default function Navbar() {
   if (hideNavbar) return null;
 
   return (
-    <nav className="w-full border-b px-8 py-4 flex items-center justify-between">
+    <nav className="w-full border-b px-8 py-4 flex items-center justify-between sticky top-0 bg-white z-40">
       <div className="flex items-center gap-6">
         <Link
           href={isHR ? "/hr/dashboard" : "/dashboard"}
@@ -42,16 +43,47 @@ export default function Navbar() {
             >
               Employees
             </Link>
+            <Link
+              href="/organogram"
+              className="text-sm text-gray-600 hover:text-black"
+            >
+              Organogram
+            </Link>
           </>
         )}
 
-        {!isHR && (
-          <Link
-            href="/dashboard"
-            className="text-sm text-gray-600 hover:text-black"
-          >
-            Dashboard
-          </Link>
+        {isManager && (
+          <>
+            <Link
+              href="/dashboard"
+              className="text-sm text-gray-600 hover:text-black"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/organogram"
+              className="text-sm text-gray-600 hover:text-black"
+            >
+              Organogram
+            </Link>
+          </>
+        )}
+
+        {!isHR && !isManager && (
+          <>
+            <Link
+              href="/dashboard"
+              className="text-sm text-gray-600 hover:text-black"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/organogram"
+              className="text-sm text-gray-600 hover:text-black"
+            >
+              Organogram
+            </Link>
+          </>
         )}
       </div>
 

@@ -82,7 +82,23 @@ export async function PATCH(
       position,
       managerId,
       role,
+      email,
     } = await req.json();
+
+    // Check if email is already taken by another user
+    if (email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (
+        existing &&
+        existing.id !==
+          (await prisma.employee.findUnique({ where: { id } }))?.userId
+      ) {
+        return NextResponse.json(
+          { error: "Email already in use" },
+          { status: 400 },
+        );
+      }
+    }
 
     const employee = await prisma.employee.update({
       where: { id },
@@ -96,12 +112,14 @@ export async function PATCH(
       },
     });
 
-    if (role) {
-      await prisma.user.update({
-        where: { id: employee.userId },
-        data: { role },
-      });
-    }
+    // Update user role and email
+    await prisma.user.update({
+      where: { id: employee.userId },
+      data: {
+        ...(role && { role }),
+        ...(email && { email }),
+      },
+    });
 
     return NextResponse.json({ success: true, employee });
   } catch (error) {
@@ -123,14 +141,22 @@ export async function DELETE(
 
     const { id } = await params;
 
+    const employee = await prisma.employee.findUnique({ where: { id } });
+    if (!employee) {
+      return NextResponse.json(
+        { error: "Employee not found" },
+        { status: 404 },
+      );
+    }
+
     await prisma.employee.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: !employee.isActive }, // Toggle instead of always false
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, isActive: !employee.isActive });
   } catch (error) {
-    console.error("Delete employee error:", error);
+    console.error("Toggle employee error:", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
