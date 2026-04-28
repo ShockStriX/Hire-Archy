@@ -49,7 +49,7 @@ export default auth((req) => {
   // Logged in and fully verified, redirect away from login
   if (isLoggedIn && isAuthPage && twoFactorVerified) {
     if (role === "HR") {
-      return NextResponse.redirect(new URL("/hr/employees", req.nextUrl));
+      return NextResponse.redirect(new URL("/hr/dashboard", req.nextUrl));
     }
     return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   }
@@ -58,6 +58,7 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.ico).*)",
+  ],
 };
-

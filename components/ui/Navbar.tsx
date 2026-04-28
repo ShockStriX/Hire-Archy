@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import LogoutButton from "@/components/ui/LogoutButton";
+import Image from "next/image";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -22,11 +23,8 @@ export default function Navbar() {
   return (
     <nav className="w-full border-b px-8 py-4 flex items-center justify-between sticky top-0 bg-white z-40">
       <div className="flex items-center gap-6">
-        <Link
-          href={isHR ? "/hr/dashboard" : "/dashboard"}
-          className="font-bold text-lg"
-        >
-          Hire-Archy
+        <Link href={isHR ? "/hr/dashboard" : "/dashboard"}>
+          <Image src="/logo.svg" alt="Hire-Archy" width={40} height={40} />
         </Link>
 
         {isHR && (

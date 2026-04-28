@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { validateEmail } from "@/lib/validation";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -49,39 +50,47 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md p-8 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold mb-6">Login</h1>
+      <div className="flex flex-col items-center w-full max-w-md">
+        {/* Logo above the card */}
+        <div className="mb-6">
+          <img src="/logo.svg" alt="Hire-Archy" width={240} height={240} />
+        </div>
 
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {/* Login card */}
+        <div className="w-full p-8 rounded-xl shadow-md">
+          <h1 className="text-2xl font-bold mb-6">Login</h1>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border rounded-lg p-2 w-full"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border rounded-lg p-2 w-full"
-          />
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="bg-blue-600 text-white rounded-lg p-2 w-full"
-          >
-            Sign In
-          </button>
-        </form>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
 
-        <p className="mt-4 text-center text-sm">
-          Forgot your password or lost 2FA access? <br />
-          Please contact your HR representative{" "}
-        </p>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="border rounded-lg p-2 w-full"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="border rounded-lg p-2 w-full"
+            />
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="bg-blue-600 text-white rounded-lg p-2 w-full"
+            >
+              Sign In
+            </button>
+          </form>
+
+          <p className="mt-4 text-center text-sm">
+            Forgot your password or lost 2FA access? <br />
+            Please contact your HR representative
+          </p>
+        </div>
       </div>
     </div>
   );
