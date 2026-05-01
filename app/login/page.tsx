@@ -4,11 +4,11 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { validateEmail } from "@/lib/validation";
-const [loading, setLoading] = useState(false);
 import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
@@ -16,25 +16,27 @@ export default function LoginPage() {
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setError("");
+    setLoading(true);
 
     const emailError = validateEmail(email);
     if (emailError) {
       setError(emailError);
+      setLoading(false);
       return;
     }
 
     const result = await signIn("credentials", {
-      email,
+      email: email.toLowerCase().trim(),
       password,
       redirect: false,
     });
 
     if (result?.error) {
       setError("Invalid email or password");
+      setLoading(false);
       return;
     }
-    const normalizedEmail = email.toLowerCase().trim()
-
+    const normalizedEmail = email.toLowerCase().trim();
 
     const res = await fetch("/api/2fa/status", {
       method: "POST",
@@ -43,7 +45,6 @@ export default function LoginPage() {
     });
 
     const data = await res.json();
-
 
     if (!data.twoFactorEnabled) {
       router.push(`/2fa-setup?email=${encodeURIComponent(normalizedEmail)}`);
