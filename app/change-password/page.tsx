@@ -12,6 +12,7 @@ function ChangePasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
+  const normalizedEmail = email?.toLowerCase().trim()
   const { update } = useSession();
 
   const handleSubmit = async () => {
@@ -27,7 +28,7 @@ function ChangePasswordContent() {
     const res = await fetch("/api/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, newPassword }),
+      body: JSON.stringify({ email: normalizedEmail, newPassword }),
     });
 
     const data = await res.json();

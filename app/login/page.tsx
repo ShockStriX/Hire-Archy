@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { validateEmail } from "@/lib/validation";
+const [loading, setLoading] = useState(false);
 import Image from "next/image";
 
 export default function LoginPage() {
@@ -32,19 +33,22 @@ export default function LoginPage() {
       setError("Invalid email or password");
       return;
     }
+    const normalizedEmail = email.toLowerCase().trim()
+
 
     const res = await fetch("/api/2fa/status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email: normalizedEmail }),
     });
 
     const data = await res.json();
 
+
     if (!data.twoFactorEnabled) {
-      router.push(`/2fa-setup?email=${encodeURIComponent(email)}`);
+      router.push(`/2fa-setup?email=${encodeURIComponent(normalizedEmail)}`);
     } else {
-      router.push(`/verify-2fa?email=${encodeURIComponent(email)}`);
+      router.push(`/verify-2fa?email=${encodeURIComponent(normalizedEmail)}`);
     }
   };
 
@@ -82,9 +86,10 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleSubmit}
-              className="bg-blue-600 text-white rounded-lg p-2 w-full"
+              disabled={loading}
+              className="bg-blue-600 text-white rounded-lg p-2 w-full disabled:opacity-50"
             >
-              Sign In
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 

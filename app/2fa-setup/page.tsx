@@ -14,6 +14,7 @@ function TwoFactorSetupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
+  const normalizedEmail = email?.toLowerCase().trim()
   const { update } = useSession();
 
   useEffect(() => {
@@ -23,7 +24,7 @@ function TwoFactorSetupContent() {
       const res = await fetch("/api/2fa/setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: normalizedEmail }),
       });
 
       const data = await res.json();
@@ -41,7 +42,7 @@ function TwoFactorSetupContent() {
     const res = await fetch("/api/2fa/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, token }),
+      body: JSON.stringify({ email: normalizedEmail, token }),
     });
 
     const data = await res.json();

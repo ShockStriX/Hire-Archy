@@ -12,6 +12,7 @@ function VerifyTwoFactorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
+  const normalizedEmail = email?.toLowerCase().trim();
   const { update } = useSession();
 
   const handleVerify = async () => {
@@ -21,7 +22,7 @@ function VerifyTwoFactorContent() {
     const res = await fetch("/api/2fa/check", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, token }),
+      body: JSON.stringify({ email: normalizedEmail, token }),
     });
 
     const data = await res.json();
@@ -41,7 +42,7 @@ function VerifyTwoFactorContent() {
         router.push("/dashboard");
       }
     }
-  }; // ← handleVerify ends here
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center">
