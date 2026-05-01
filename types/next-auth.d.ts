@@ -4,6 +4,8 @@ declare module "next-auth" {
   interface User {
     twoFactorEnabled?: boolean
     twoFactorVerified?: boolean
+    role?: string
+    firstLogin?: boolean
   }
 
   interface Session {
@@ -11,6 +13,8 @@ declare module "next-auth" {
       email: string
       twoFactorEnabled?: boolean
       twoFactorVerified?: boolean
+      role?: string
+      firstLogin?: boolean
     }
   }
 }
@@ -19,5 +23,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     twoFactorEnabled?: boolean
     twoFactorVerified?: boolean
+    role?: string
+    firstLogin?: boolean
   }
 }

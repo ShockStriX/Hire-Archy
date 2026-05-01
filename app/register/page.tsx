@@ -35,9 +35,7 @@ export default function RegisterPage() {
       body: JSON.stringify({ email, password }),
     });
 
-
     const data = await res.json();
-
 
     if (!res.ok) {
       setError(data.error || "Something went wrong");
@@ -49,7 +47,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md p-8 rounded-xl shadow-md">
+      <div className="w-full max-w-md p-8 rounded-xl shadow-md bg-white">
         <h1 className="text-2xl font-bold mb-6">Register</h1>
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -60,6 +58,7 @@ export default function RegisterPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             className="border rounded-lg p-2 w-full"
           />
           <input
@@ -67,6 +66,7 @@ export default function RegisterPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             className="border rounded-lg p-2 w-full"
           />
           <button
