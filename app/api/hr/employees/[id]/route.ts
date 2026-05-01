@@ -90,10 +90,11 @@ export async function PATCH(
       role,
       email,
     } = await req.json();
+    const normalizedEmail = email?.toLowerCase().trim()
 
     // Check if email is already taken by another user
-    if (email) {
-      const existing = await prisma.user.findUnique({ where: { email } });
+    if (normalizedEmail) {
+      const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
       if (
         existing &&
         existing.id !==
@@ -123,7 +124,7 @@ export async function PATCH(
       where: { id: employee.userId },
       data: {
         ...(role && { role }),
-        ...(email && { email }),
+        ...(email && { email: normalizedEmail }),
       },
     });
 

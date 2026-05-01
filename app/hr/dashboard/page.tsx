@@ -52,7 +52,7 @@ export default async function HRDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
         <Link
           href="/hr/employees"
-          className="p-6 rounded-xl border shadow-sm hover:shadow-md transition"
+          className="p-6 rounded-xl border shadow-sm hover:shadow-md transition bg-white"
         >
           <h2 className="text-lg font-bold mb-1">Employees</h2>
           <p className="text-gray-500 text-sm">View and manage all employees</p>
@@ -60,7 +60,7 @@ export default async function HRDashboardPage() {
 
         <Link
           href="/hr/employees/new"
-          className="p-6 rounded-xl border shadow-sm hover:shadow-md transition"
+          className="p-6 rounded-xl border shadow-sm hover:shadow-md transition bg-white "
         >
           <h2 className="text-lg font-bold mb-1">Create Employee</h2>
           <p className="text-gray-500 text-sm">

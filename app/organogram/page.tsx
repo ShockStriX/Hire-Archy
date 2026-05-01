@@ -397,7 +397,7 @@ export default function OrganogramPage() {
   return (
     <div className="flex flex-col flex-1 relative">
       {/* Fixed header */}
-      <div className="fixed top-28 left-0 right-0 z-30 bg-[#EEF2F7] border-b flex justify-between items-center px-8 py-4">
+      <div className="fixed top-20 left-0 right-0 z-30 bg-[#EEF2F7] border-b flex justify-between items-center px-8 py-4">
         <h1 className="text-2xl font-bold">Organogram</h1>
 
         <div className="flex items-center gap-4">
@@ -436,7 +436,7 @@ export default function OrganogramPage() {
 
       {/* Organogram canvas */}
       <div
-        className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing bg-[#EEF2F7]"
+        className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing bg-[#EEF2F7] mt-16 select-none"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

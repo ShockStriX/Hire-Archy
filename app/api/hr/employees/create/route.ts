@@ -1,17 +1,16 @@
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import bcrypt from "bcryptjs"
-import { generateEmployeeNumber } from "@/lib/employeeNumber"
-import { generateInitialPassword } from "@/lib/validation"
-import { auth } from "@/auth"
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { generateEmployeeNumber } from "@/lib/employeeNumber";
+import { generateInitialPassword, validateEmail } from "@/lib/validation";
+import { auth } from "@/auth";
 
 export async function POST(req: Request) {
   try {
-    const session = await auth()
+    const session = await auth();
 
-    // Only HR can create employees
     if (!session || session.user.role !== "HR") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const {
@@ -23,35 +22,56 @@ export async function POST(req: Request) {
       position,
       managerId,
       role,
-    } = await req.json()
+    } = await req.json();
 
-    if (!email || !name || !surname || !birthDate || !gross_salary || !position) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (
+      !email ||
+      !name ||
+      !surname ||
+      !birthDate ||
+      !gross_salary ||
+      !position
+    ) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 },
+      );
     }
 
-    const assignedRole = role === "HR" ? "HR" : role === "MANAGER" ? "MANAGER" : "EMPLOYEE"
+    const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if email already exists
-    const existing = await prisma.user.findUnique({ where: { email } })
+    // Validate email format
+    const emailError = validateEmail(normalizedEmail);
+    if (emailError) {
+      return NextResponse.json({ error: emailError }, { status: 400 });
+    }
+
+    const assignedRole =
+      role === "HR" ? "HR" : role === "MANAGER" ? "MANAGER" : "EMPLOYEE";
+
+    const existing = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
     if (existing) {
-      return NextResponse.json({ error: "Email already exists" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Email already exists" },
+        { status: 400 },
+      );
     }
 
-    // Generate employee number and password
-    const employeeNumber = await generateEmployeeNumber()
-    const initialPassword = generateInitialPassword()
-    const hashedPassword = await bcrypt.hash(initialPassword, 10)
+    const employeeNumber = await generateEmployeeNumber();
+    const initialPassword = generateInitialPassword();
+    const hashedPassword = await bcrypt.hash(initialPassword, 10);
 
-    // Create User and Employee in a transaction
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          email,
+          email: normalizedEmail,
           password: hashedPassword,
           role: assignedRole,
           firstLogin: true,
-        }
-      })
+        },
+      });
 
       const employee = await tx.employee.create({
         data: {
@@ -63,22 +83,21 @@ export async function POST(req: Request) {
           position,
           managerId: managerId || null,
           userId: user.id,
-        }
-      })
+        },
+      });
 
-      return { user, employee }
-    })
+      return { user, employee };
+    });
 
     return NextResponse.json({
       success: true,
       employeeNumber: result.employee.employeeNumber,
       initialPassword,
-      email,
+      email: normalizedEmail,
       role: assignedRole,
-    })
-
+    });
   } catch (error) {
-    console.error("Create employee error:", error)
-    return NextResponse.json({ error: String(error) }, { status: 500 })
+    console.error("Create employee error:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }

@@ -8,6 +8,8 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const email = formData.get("email") as string;
+    const normalizedEmail = email.toLowerCase().trim()
+
 
     if (!file || !email) {
       return NextResponse.json(
@@ -24,7 +26,7 @@ export async function POST(req: Request) {
     });
 
     await prisma.user.update({
-      where: { email },
+      where: { email: normalizedEmail },
       data: { avatarUrl: blob.url },
     });
 
