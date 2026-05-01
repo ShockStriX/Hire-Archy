@@ -93,7 +93,7 @@ export default function UserCard({
   };
 
   return (
-    <div className="w-full max-w-md rounded-xl overflow-hidden shadow-lg border">
+    <div className="w-full max-w-md rounded-xl overflow-hidden shadow-lg border bg-white">
       {/* Banner */}
       <div
         className="relative w-full h-32"

@@ -24,7 +24,7 @@ export default function Navbar() {
     <nav className="w-full border-b px-8 py-4 flex items-center justify-between sticky top-0 bg-[#0F2A44] z-40">
       <div className="flex items-center gap-6">
         <Link href={isHR ? "/hr/dashboard" : "/dashboard"}>
-          <Image src="/logo.svg" alt="Hire-Archy" width={100} height={100} />
+          <Image src="/logo.svg" alt="Hire-Archy" width={60} height={60} />
         </Link>
 
         {isHR && (

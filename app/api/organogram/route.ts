@@ -8,7 +8,7 @@ interface EmployeeNode {
   name: string;
   surname: string;
   position: string;
-  gross_salary?: number | { toNumber: () => number }; // Handle Prisma Decimal
+  gross_salary?: number | { toNumber: () => number };
   isActive: boolean;
   managerId: string | null;
   user: {
@@ -19,7 +19,6 @@ interface EmployeeNode {
   subordinates?: EmployeeNode[];
 }
 
-// Recursively build tree from flat list
 function buildTree(
   employees: EmployeeNode[],
   managerId: string | null,
@@ -37,7 +36,6 @@ function buildTree(
     }));
 }
 
-// Get all subordinate IDs recursively
 function getAllSubordinateIds(
   employees: EmployeeNode[],
   managerId: string,
@@ -57,8 +55,8 @@ export async function GET() {
     }
 
     const role = session.user.role;
+    const normalizedEmail = session.user.email.toLowerCase().trim(); // Add this
 
-    // Fetch all active employees
     const allEmployees = await prisma.employee.findMany({
       where: { isActive: true },
       include: {
@@ -76,9 +74,8 @@ export async function GET() {
     if (role === "HR") {
       const tree = buildTree(allEmployees as unknown as EmployeeNode[], null);
 
-      // Find current HR user's employee record
       const currentHREmployee = await prisma.employee.findFirst({
-        where: { user: { email: session.user.email } },
+        where: { user: { email: normalizedEmail } }, // Use normalizedEmail
       });
 
       return NextResponse.json({
@@ -90,7 +87,7 @@ export async function GET() {
 
     // Find current user's employee record
     const currentEmployee = await prisma.employee.findFirst({
-      where: { user: { email: session.user.email } },
+      where: { user: { email: normalizedEmail } }, // Use normalizedEmail
       include: {
         user: { select: { email: true, role: true, avatarUrl: true } },
         manager: {
@@ -132,7 +129,6 @@ export async function GET() {
         currentEmployee.manager?.managerId ?? null,
       );
 
-      // Strip salary from manager's node
       const treeWithHiddenSalary = tree.map((node) => {
         if (node.id === currentEmployee.managerId) {
           return { ...node, gross_salary: undefined };

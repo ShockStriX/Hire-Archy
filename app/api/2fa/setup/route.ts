@@ -4,13 +4,14 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   const { email } = await req.json();
+  const normalizedEmail = email.toLowerCase().trim();
 
   const secret = speakeasy.generateSecret({
-    name: `Hire-Archy (${email})`,
+    name: `Hire-Archy (${normalizedEmail})`,
   });
 
   await prisma.user.update({
-    where: { email },
+    where: { email: normalizedEmail },
     data: { twoFactorSecret: secret.base32 },
   });
 
