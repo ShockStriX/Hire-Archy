@@ -45,7 +45,7 @@ function VerifyTwoFactorContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md p-8 rounded-xl shadow-md text-center">
+      <div className="w-full max-w-md p-8 rounded-xl shadow-md text-center bg-white">
         <h1 className="text-2xl font-bold mb-2">Two-Factor Authentication</h1>
         <p className="text-gray-500 mb-6">
           Enter the 6-digit code from your authenticator app
@@ -58,6 +58,7 @@ function VerifyTwoFactorContent() {
           placeholder="Enter 6-digit code"
           value={token}
           onChange={(e) => setToken(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleVerify()}
           className="border rounded-lg p-2 w-full mb-4"
           maxLength={6}
         />

@@ -18,6 +18,9 @@ interface UserCardProps {
   avatarUrl?: string | null;
   bannerUrl?: string | null;
   role?: string | null;
+  position?: string | null;
+  name?: string | null;
+  surname?: string | null;
 }
 
 export default function UserCard({
@@ -25,6 +28,9 @@ export default function UserCard({
   avatarUrl,
   bannerUrl,
   role,
+  position,
+  name,
+  surname,
 }: UserCardProps) {
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState(
     avatarUrl || getGravatarUrl(email),
@@ -55,7 +61,7 @@ export default function UserCard({
     if (!res.ok) {
       setError(data.error || "Avatar upload failed");
     } else {
-      setCurrentAvatarUrl(data.avatarUrl);
+      setCurrentAvatarUrl(`${data.avatarUrl}?t=${Date.now()}`);
     }
     setAvatarLoading(false);
   };
@@ -81,7 +87,7 @@ export default function UserCard({
     if (!res.ok) {
       setError(data.error || "Banner upload failed");
     } else {
-      setCurrentBannerUrl(data.bannerUrl);
+      setCurrentBannerUrl(`${data.bannerUrl}?t=${Date.now()}`);
     }
     setBannerLoading(false);
   };
@@ -146,9 +152,20 @@ export default function UserCard({
             />
           </label>
         </div>
-
+        {name && surname && (
+          <h2 className="text-lg font-bold">
+            {name} {surname}
+          </h2>
+        )}
         <h2 className="text-lg font-bold">{email}</h2>
-        <p className="text-sm text-gray-500">{role === "HR" ? "HR Representative" : "Employee"}</p>
+        {position && <p className="text-sm text-gray-600">{position}</p>}
+        <p className="text-sm text-gray-500">
+          {role === "HR"
+            ? "HR Representative"
+            : role === "MANAGER"
+              ? "Manager"
+              : "Employee"}
+        </p>
 
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>

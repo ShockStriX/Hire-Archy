@@ -65,7 +65,7 @@ function TwoFactorSetupContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md p-8 rounded-xl shadow-md text-center">
+      <div className="w-full max-w-md p-8 rounded-xl shadow-md text-center bg-white">
         <h1 className="text-2xl font-bold mb-2">
           Set Up Two-Factor Authentication
         </h1>
@@ -91,6 +91,7 @@ function TwoFactorSetupContent() {
           placeholder="Enter 6-digit code"
           value={token}
           onChange={(e) => setToken(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleVerify()}
           className="border rounded-lg p-2 w-full mb-4"
           maxLength={6}
         />

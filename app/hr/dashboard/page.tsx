@@ -18,10 +18,17 @@ export default async function HRDashboardPage() {
         select: {
           avatarUrl: true,
           bannerUrl: true,
+          employee: {
+            select: {
+              position: true,
+              name: true,
+              surname: true,
+            },
+          },
         },
       });
     },
-    ["user-data"],
+    ["hr-user-data"],
     { revalidate: 60, tags: ["user-data"] },
   );
 
@@ -29,7 +36,7 @@ export default async function HRDashboardPage() {
 
   return (
     <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 ">
         <h1 className="text-2xl font-bold">HR Dashboard</h1>
       </div>
       <UserCard
@@ -37,6 +44,9 @@ export default async function HRDashboardPage() {
         avatarUrl={user?.avatarUrl}
         bannerUrl={user?.bannerUrl}
         role={session.user.role}
+        position={user?.employee?.position}
+        name={user?.employee?.name}
+        surname={user?.employee?.surname}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">

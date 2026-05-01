@@ -10,6 +10,9 @@ interface Employee {
   position: string;
   employeeNumber: string;
   isActive: boolean;
+  user: {
+    role: string;
+  };
 }
 
 interface CreatedEmployee {
@@ -33,13 +36,30 @@ export default function NewEmployeePage() {
   const [error, setError] = useState("");
   const [created, setCreated] = useState<CreatedEmployee | null>(null);
   const router = useRouter();
+  const [birthDay, setBirthDay] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+
+  const updateBirthDate = (day: string, month: string, year: string) => {
+    if (day && month && year) {
+      const date = new Date(
+        `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`,
+      );
+      setBirthDate(date.toISOString().split("T")[0]);
+    }
+  };
 
   useEffect(() => {
     // Fetch existing employees for manager dropdown
     const fetchEmployees = async () => {
       const res = await fetch("/api/hr/employees");
       const data = await res.json();
-      setManagers(data.employees?.filter((e: Employee) => e.isActive) || []);
+      setManagers(
+        data.employees?.filter(
+          (e: Employee) =>
+            e.isActive && (e.user.role === "MANAGER" || e.user.role === "HR"),
+        ) || [],
+      );
     };
     fetchEmployees();
   }, []);
@@ -77,7 +97,7 @@ export default function NewEmployeePage() {
   if (created) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="w-full max-w-md p-8 rounded-xl shadow-md">
+        <div className="w-full max-w-md p-8 rounded-xl shadow-md bg-white">
           <h1 className="text-2xl font-bold mb-2 text-green-600">
             {created.role === "HR"
               ? "HR Account Created!"
@@ -139,7 +159,7 @@ export default function NewEmployeePage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md p-8 rounded-xl shadow-md">
+      <div className="w-full max-w-md p-8 rounded-xl shadow-md bg-white">
         <h1 className="text-2xl font-bold mb-6">Create New Account</h1>
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -166,13 +186,72 @@ export default function NewEmployeePage() {
             onChange={(e) => setSurname(e.target.value)}
             className="border rounded-lg p-2 w-full"
           />
-          <input
-            type="date"
-            placeholder="Birth Date"
-            value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
-            className="border rounded-lg p-2 w-full"
-          />
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Birth Date</p>
+            <div className="flex gap-2">
+              <select
+                value={birthDay}
+                onChange={(e) => {
+                  setBirthDay(e.target.value);
+                  updateBirthDate(e.target.value, birthMonth, birthYear);
+                }}
+                className="border rounded-lg p-2 w-full"
+              >
+                <option value="">Day</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={String(d)}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={birthMonth}
+                onChange={(e) => {
+                  setBirthMonth(e.target.value);
+                  updateBirthDate(birthDay, e.target.value, birthYear);
+                }}
+                className="border rounded-lg p-2 w-full"
+              >
+                <option value="">Month</option>
+                {[
+                  "January",
+                  "February",
+                  "March",
+                  "April",
+                  "May",
+                  "June",
+                  "July",
+                  "August",
+                  "September",
+                  "October",
+                  "November",
+                  "December",
+                ].map((m, i) => (
+                  <option key={m} value={String(i + 1)}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={birthYear}
+                onChange={(e) => {
+                  setBirthYear(e.target.value);
+                  updateBirthDate(birthDay, birthMonth, e.target.value);
+                }}
+                className="border rounded-lg p-2 w-full"
+              >
+                <option value="">Year</option>
+                {Array.from(
+                  { length: 80 },
+                  (_, i) => new Date().getFullYear() - i,
+                ).map((y) => (
+                  <option key={y} value={String(y)}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <input
             type="number"
             placeholder="Gross Salary"

@@ -53,11 +53,11 @@ export default function LoginPage() {
       <div className="flex flex-col items-center w-full max-w-md">
         {/* Logo above the card */}
         <div className="mb-6">
-          <img src="/logo.svg" alt="Hire-Archy" width={240} height={240} />
+          <img src="/logo2.svg" alt="Hire-Archy" width={240} height={240} />
         </div>
 
         {/* Login card */}
-        <div className="w-full p-8 rounded-xl shadow-md">
+        <div className="w-full p-8 rounded-xl shadow-md bg-white">
           <h1 className="text-2xl font-bold mb-6">Login</h1>
 
           {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -68,6 +68,7 @@ export default function LoginPage() {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               className="border rounded-lg p-2 w-full"
             />
             <input
@@ -75,6 +76,7 @@ export default function LoginPage() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               className="border rounded-lg p-2 w-full"
             />
             <button

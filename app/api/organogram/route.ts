@@ -75,7 +75,17 @@ export async function GET() {
     // HR sees everything
     if (role === "HR") {
       const tree = buildTree(allEmployees as unknown as EmployeeNode[], null);
-      return NextResponse.json({ tree, role });
+
+      // Find current HR user's employee record
+      const currentHREmployee = await prisma.employee.findFirst({
+        where: { user: { email: session.user.email } },
+      });
+
+      return NextResponse.json({
+        tree,
+        role,
+        currentEmployeeId: currentHREmployee?.id ?? null,
+      });
     }
 
     // Find current user's employee record
@@ -105,22 +115,33 @@ export async function GET() {
 
     // MANAGER sees their subtree + who they report to
     if (role === "MANAGER") {
-      // In getAllSubordinateIds calls
       const subordinateIds = getAllSubordinateIds(
         allEmployees as unknown as EmployeeNode[],
         currentEmployee.id,
       );
-      // In MANAGER section
+
       const relevantEmployees = allEmployees.filter(
-        (e) => e.id === currentEmployee.id || subordinateIds.includes(e.id),
-      );
-      const tree = buildTree(
-        relevantEmployees as unknown as EmployeeNode[],
-        currentEmployee.managerId,
+        (e) =>
+          e.id === currentEmployee.id ||
+          e.id === currentEmployee.managerId ||
+          subordinateIds.includes(e.id),
       );
 
+      const tree = buildTree(
+        relevantEmployees as unknown as EmployeeNode[],
+        currentEmployee.manager?.managerId ?? null,
+      );
+
+      // Strip salary from manager's node
+      const treeWithHiddenSalary = tree.map((node) => {
+        if (node.id === currentEmployee.managerId) {
+          return { ...node, gross_salary: undefined };
+        }
+        return node;
+      });
+
       return NextResponse.json({
-        tree,
+        tree: treeWithHiddenSalary,
         role,
         currentEmployeeId: currentEmployee.id,
         manager: currentEmployee.manager,

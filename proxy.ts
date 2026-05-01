@@ -40,9 +40,13 @@ export default auth((req) => {
         new URL(`/verify-2fa?email=${req.auth?.user?.email}`, req.nextUrl),
       );
     }
-    // Block employees from HR pages
+    // Block non-HR users from HR pages, but allow managers to view employee profiles
     if (pathname.startsWith("/hr") && role !== "HR") {
-      return NextResponse.redirect(new URL("/hr/dashboard", req.nextUrl));
+      // Allow managers to access individual employee profiles
+      if (role === "MANAGER" && pathname.startsWith("/hr/employees/")) {
+        return NextResponse.next();
+      }
+      return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
     }
   }
 

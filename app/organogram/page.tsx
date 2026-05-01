@@ -3,15 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import crypto from "crypto";
+import { useRouter } from "next/navigation";
 
 const Tree = dynamic(
   () => import("react-organizational-chart").then((mod) => mod.Tree),
-  { ssr: false }
+  { ssr: false },
 );
 
 const TreeNode = dynamic(
   () => import("react-organizational-chart").then((mod) => mod.TreeNode),
-  { ssr: false }
+  { ssr: false },
 );
 
 function getGravatarUrl(email: string, size: number = 80) {
@@ -40,28 +41,23 @@ interface Employee {
 }
 
 interface SelectedEmployee {
+  id: string;
   name: string;
   surname: string;
   position: string;
   email: string;
   role: string;
   avatarUrl: string | null;
-  colleagues?: {
-    name: string;
-    surname: string;
-    position: string;
-    email: string;
-  }[];
 }
 
 function getRoleBadgeColor(role: string) {
   switch (role) {
     case "HR":
-      return "bg-purple-100 text-purple-700";
+      return "bg-[#DCFCE7] text-purple-700";
     case "MANAGER":
-      return "bg-blue-100 text-blue-700";
+      return "bg-[#E0E7FF] text-blue-700";
     default:
-      return "bg-gray-100 text-gray-700";
+      return "bg-[#F1F5F9] text-[gray-700]";
   }
 }
 
@@ -69,11 +65,13 @@ function EmployeeCard({
   employee,
   isCurrentUser,
   showSalary,
+  isHighlighted,
   onSelect,
 }: {
   employee: Employee;
   isCurrentUser: boolean;
   showSalary: boolean;
+  isHighlighted: boolean;
   onSelect: (emp: SelectedEmployee) => void;
 }) {
   const avatarUrl =
@@ -83,6 +81,7 @@ function EmployeeCard({
     <div
       onClick={() =>
         onSelect({
+          id: employee.id,
           name: employee.name,
           surname: employee.surname,
           position: employee.position,
@@ -94,7 +93,13 @@ function EmployeeCard({
       className={`
         inline-flex flex-col items-center p-3 rounded-xl border shadow-sm cursor-pointer
         hover:shadow-md transition-all min-w-36 max-w-44
-        ${isCurrentUser ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"}
+        ${
+          isCurrentUser
+            ? "border-blue-500 border-2 bg-white"
+            : isHighlighted
+              ? "border-yellow-400 bg-yellow-50 shadow-yellow-200 shadow-md"
+              : "border-gray-200 bg-white"
+        }
       `}
     >
       <img
@@ -126,14 +131,24 @@ function OrgNode({
   employee,
   currentEmployeeId,
   showSalary,
+  search,
   onSelect,
 }: {
   employee: Employee;
   currentEmployeeId?: string;
   showSalary: boolean;
+  search: string;
   onSelect: (emp: SelectedEmployee) => void;
 }) {
   const isCurrentUser = employee.id === currentEmployeeId;
+
+  const isHighlighted =
+    search.trim() !== "" &&
+    (employee.name.toLowerCase().includes(search.toLowerCase()) ||
+      employee.surname.toLowerCase().includes(search.toLowerCase()) ||
+      employee.position.toLowerCase().includes(search.toLowerCase()) ||
+      employee.user.email.toLowerCase().includes(search.toLowerCase()) ||
+      employee.user.role.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <TreeNode
@@ -143,6 +158,7 @@ function OrgNode({
             employee={employee}
             isCurrentUser={isCurrentUser}
             showSalary={showSalary}
+            isHighlighted={isHighlighted}
             onSelect={onSelect}
           />
         </div>
@@ -154,6 +170,7 @@ function OrgNode({
           employee={sub}
           currentEmployeeId={currentEmployeeId}
           showSalary={showSalary}
+          search={search}
           onSelect={onSelect}
         />
       ))}
@@ -162,6 +179,9 @@ function OrgNode({
 }
 
 export default function OrganogramPage() {
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+
   const [data, setData] = useState<{
     tree?: Employee[];
     role?: string;
@@ -224,109 +244,114 @@ export default function OrganogramPage() {
     const currentEmployee = data.currentEmployee!;
     const manager = data.manager;
     const colleagues = data.colleagues || [];
-    const avatarUrl =
-      currentEmployee.user.avatarUrl ||
-      getGravatarUrl(currentEmployee.user.email);
+
+    // Build a fake tree structure for the employee view
+    const employeeNode: Employee = {
+      ...currentEmployee,
+      subordinates: [],
+    };
+
+    const colleagueNodes: Employee[] = colleagues.map((col) => ({
+      ...col,
+      subordinates: [],
+    }));
+
+    // All siblings (current employee + colleagues) under the manager
+    const siblings = [employeeNode, ...colleagueNodes];
+
+    // If there's a manager, use them as root
+    // If not, render siblings directly
+    const rootNode: Employee | null = manager
+      ? {
+          ...manager,
+          subordinates: siblings,
+        }
+      : null;
 
     return (
-      <div className="p-8 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-8">My Position</h1>
-
-        {/* Manager above */}
-        {manager && (
-          <div className="mb-8">
-            <p className="text-xs text-gray-500 mb-2">Reports To</p>
-            <div
-              onClick={() =>
-                setSelected({
-                  name: manager.name,
-                  surname: manager.surname,
-                  position: manager.position,
-                  email: manager.user.email,
-                  role: manager.user.role,
-                  avatarUrl: manager.user.avatarUrl,
-                })
-              }
-              className="flex items-center gap-3 p-3 border rounded-xl bg-white shadow-sm hover:shadow-md cursor-pointer w-fit"
+      <div className="flex flex-col flex-1 relative">
+        {/* Fixed header */}
+        <div className="fixed top-28 left-0 right-0 z-30 bg-[#6366F1] border-b flex justify-between items-center px-8 py-4">
+          <h1 className="text-2xl font-bold">My Position</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setScale((s) => Math.min(s + 0.1, 2))}
+              className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1 text-sm"
             >
-              <img
-                src={
-                  manager.user.avatarUrl || getGravatarUrl(manager.user.email)
-                }
-                className="w-10 h-10 rounded-full object-cover"
-                alt="Manager"
-              />
-              <div>
-                <p className="font-semibold text-sm">
-                  {manager.name} {manager.surname}
-                </p>
-                <p className="text-xs text-gray-500">{manager.position}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Current employee */}
-        <div className="mb-8">
-          <p className="text-xs text-gray-500 mb-2">You</p>
-          <div className="flex items-center gap-3 p-4 border-2 border-blue-500 rounded-xl bg-blue-50 shadow-sm w-fit">
-            <img
-              src={avatarUrl}
-              className="w-12 h-12 rounded-full object-cover"
-              alt="You"
-            />
-            <div>
-              <p className="font-semibold">
-                {currentEmployee.name} {currentEmployee.surname}
-              </p>
-              <p className="text-sm text-gray-500">
-                {currentEmployee.position}
-              </p>
-              <p className="text-xs text-gray-400">
-                {currentEmployee.user.email}
-              </p>
-            </div>
+              +
+            </button>
+            <button
+              onClick={() => setScale(1)}
+              className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1 text-sm"
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => setScale((s) => Math.max(s - 0.1, 0.3))}
+              className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1 text-sm"
+            >
+              −
+            </button>
           </div>
         </div>
 
-        {/* Colleagues */}
-        {colleagues.length > 0 && (
-          <div>
-            <p className="text-xs text-gray-500 mb-2">Colleagues</p>
-            <div className="flex flex-wrap gap-3">
-              {colleagues.map((col) => (
-                <div
-                  key={col.id}
-                  onClick={() =>
-                    setSelected({
-                      name: col.name,
-                      surname: col.surname,
-                      position: col.position,
-                      email: col.user.email,
-                      role: col.user.role,
-                      avatarUrl: col.user.avatarUrl,
-                    })
-                  }
-                  className="flex items-center gap-3 p-3 border rounded-xl bg-white shadow-sm hover:shadow-md cursor-pointer"
-                >
-                  <img
-                    src={col.user.avatarUrl || getGravatarUrl(col.user.email)}
-                    className="w-10 h-10 rounded-full object-cover"
-                    alt={col.name}
+        {/* Organogram canvas */}
+        <div
+          className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing bg-[#F5F7FA] mt-16"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+        >
+          <div
+            style={{
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transformOrigin: "center top",
+              transition: isDragging ? "none" : "transform 0.1s",
+              padding: "40px",
+              minWidth: "max-content",
+            }}
+          >
+            {rootNode ? (
+              <Tree
+                lineWidth="2px"
+                lineColor="#3b82f6"
+                lineBorderRadius="8px"
+                label={<div />}
+              >
+                <OrgNode
+                  employee={rootNode}
+                  currentEmployeeId={currentEmployee.id}
+                  showSalary={false}
+                  search=""
+                  onSelect={setSelected}
+                />
+              </Tree>
+            ) : (
+              // No manager - render siblings directly
+              <Tree
+                lineWidth="2px"
+                lineColor="#3b82f6"
+                lineBorderRadius="8px"
+                label={<div />}
+              >
+                {siblings.map((emp) => (
+                  <OrgNode
+                    key={emp.id}
+                    employee={emp}
+                    currentEmployeeId={currentEmployee.id}
+                    showSalary={false}
+                    search=""
+                    onSelect={setSelected}
                   />
-                  <div>
-                    <p className="font-semibold text-sm">
-                      {col.name} {col.surname}
-                    </p>
-                    <p className="text-xs text-gray-500">{col.position}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </Tree>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Node click modal */}
+        {/* Node click modal - read only for employees */}
         {selected && (
           <div
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
@@ -349,7 +374,7 @@ export default function OrganogramPage() {
                   <p className="text-gray-500 text-sm">{selected.position}</p>
                   <p className="text-gray-400 text-xs">{selected.email}</p>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(selected.role)}`}
+                    className={`text-xs px-2 py-0.5 rounded-full mt-1 inline-block ${getRoleBadgeColor(selected.role)}`}
                   >
                     {selected.role}
                   </span>
@@ -368,37 +393,50 @@ export default function OrganogramPage() {
     );
   }
 
-  // HR and Manager view - full interactive organogram
+  // HR and Manager view
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-col flex-1 relative">
       {/* Fixed header */}
-      <div className="flex-none z-30 bg-white border-b flex justify-between items-center px-8 py-4">
+      <div className="fixed top-28 left-0 right-0 z-30 bg-[#EEF2F7] border-b flex justify-between items-center px-8 py-4">
         <h1 className="text-2xl font-bold">Organogram</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setScale((s) => Math.min(s + 0.1, 2))}
-            className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1 text-sm"
-          >
-            +
-          </button>
-          <button
-            onClick={() => setScale(1)}
-            className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1 text-sm"
-          >
-            Reset
-          </button>
-          <button
-            onClick={() => setScale((s) => Math.max(s - 0.1, 0.3))}
-            className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1 text-sm"
-          >
-            −
-          </button>
+
+        <div className="flex items-center gap-4">
+          {/* Search bar */}
+          <input
+            type="text"
+            placeholder="Search by name, position or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border rounded-lg px-3 py-1.5 text-sm w-64 border-black"
+          />
+
+          {/* Zoom controls */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setScale((s) => Math.min(s + 0.1, 2))}
+              className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1 text-sm border-black"
+            >
+              +
+            </button>
+            <button
+              onClick={() => setScale(1)}
+              className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1 text-sm"
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => setScale((s) => Math.max(s - 0.1, 0.3))}
+              className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1 text-sm"
+            >
+              −
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Organogram canvas */}
       <div
-        className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing bg-gray-50"
+        className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing bg-[#EEF2F7]"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -417,7 +455,7 @@ export default function OrganogramPage() {
           {data?.tree && data.tree.length > 0 && (
             <Tree
               lineWidth="2px"
-              lineColor="#d1d5db"
+              lineColor="#3b82f6"
               lineBorderRadius="8px"
               label={<div />}
             >
@@ -427,6 +465,7 @@ export default function OrganogramPage() {
                   employee={root}
                   currentEmployeeId={data.currentEmployeeId}
                   showSalary={showSalary}
+                  search={search}
                   onSelect={setSelected}
                 />
               ))}
@@ -435,7 +474,7 @@ export default function OrganogramPage() {
         </div>
       </div>
 
-      {/* Node click modal */}
+      {/* Node click modal - HR and Manager view */}
       {selected && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
@@ -464,12 +503,24 @@ export default function OrganogramPage() {
                 </span>
               </div>
             </div>
-            <button
-              onClick={() => setSelected(null)}
-              className="bg-gray-200 text-gray-800 rounded-lg px-4 py-2 text-sm w-full"
-            >
-              Close
-            </button>
+
+            <div className="flex flex-col gap-2">
+              {selected.id !== data?.currentEmployeeId &&
+                selected.id !== data?.manager?.id && ( // Hide for manager above
+                  <button
+                    onClick={() => router.push(`/hr/employees/${selected.id}`)}
+                    className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm w-full mb-2"
+                  >
+                    Edit Details
+                  </button>
+                )}
+              <button
+                onClick={() => setSelected(null)}
+                className="bg-gray-200 text-gray-800 rounded-lg px-4 py-2 text-sm w-full"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

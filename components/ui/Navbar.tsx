@@ -21,29 +21,29 @@ export default function Navbar() {
   if (hideNavbar) return null;
 
   return (
-    <nav className="w-full border-b px-8 py-4 flex items-center justify-between sticky top-0 bg-white z-40">
+    <nav className="w-full border-b px-8 py-4 flex items-center justify-between sticky top-0 bg-[#0F2A44] z-40">
       <div className="flex items-center gap-6">
         <Link href={isHR ? "/hr/dashboard" : "/dashboard"}>
-          <Image src="/logo.svg" alt="Hire-Archy" width={40} height={40} />
+          <Image src="/logo.svg" alt="Hire-Archy" width={100} height={100} />
         </Link>
 
         {isHR && (
           <>
             <Link
               href="/hr/dashboard"
-              className="text-sm text-gray-600 hover:text-black"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
             >
               Dashboard
             </Link>
             <Link
               href="/hr/employees"
-              className="text-sm text-gray-600 hover:text-black"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
             >
               Employees
             </Link>
             <Link
               href="/organogram"
-              className="text-sm text-gray-600 hover:text-black"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
             >
               Organogram
             </Link>
@@ -54,13 +54,13 @@ export default function Navbar() {
           <>
             <Link
               href="/dashboard"
-              className="text-sm text-gray-600 hover:text-black"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
             >
               Dashboard
             </Link>
             <Link
               href="/organogram"
-              className="text-sm text-gray-600 hover:text-black"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
             >
               Organogram
             </Link>
@@ -71,13 +71,13 @@ export default function Navbar() {
           <>
             <Link
               href="/dashboard"
-              className="text-sm text-gray-600 hover:text-black"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
             >
               Dashboard
             </Link>
             <Link
               href="/organogram"
-              className="text-sm text-gray-600 hover:text-black"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
             >
               Organogram
             </Link>
@@ -86,7 +86,7 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <span className="text-sm text-gray-500">{session?.user?.email}</span>
+        <span className="text-sm text-[#E6EDF3]">{session?.user?.email}</span>
         <LogoutButton />
       </div>
     </nav>

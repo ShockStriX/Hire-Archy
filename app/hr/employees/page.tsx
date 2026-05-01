@@ -1,58 +1,135 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface Employee {
-  id: string
-  employeeNumber: string
-  name: string
-  surname: string
-  position: string
-  isActive: boolean
+  id: string;
+  employeeNumber: string;
+  name: string;
+  surname: string;
+  position: string;
+  isActive: boolean;
   manager: {
-    name: string
-    surname: string
-    employeeNumber: string
-  } | null
+    name: string;
+    surname: string;
+    employeeNumber: string;
+  } | null;
   user: {
-    email: string
-    role: string
-  }
+    email: string;
+    role: string;
+  };
 }
 
+type SortField =
+  | "employeeNumber"
+  | "name"
+  | "position"
+  | "email"
+  | "role"
+  | "status";
+type SortDirection = "asc" | "desc";
+
 export default function HREmployeesPage() {
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [search, setSearch] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<"all" | "active" | "inactive">("active")
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "active" | "inactive">("active");
+  const [sortField, setSortField] = useState<SortField>("employeeNumber");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   useEffect(() => {
     const fetchEmployees = async () => {
-      const res = await fetch("/api/hr/employees")
-      const data = await res.json()
-      setEmployees(data.employees || [])
-      setLoading(false)
+      const res = await fetch("/api/hr/employees");
+      const data = await res.json();
+      setEmployees(data.employees || []);
+      setLoading(false);
+    };
+    fetchEmployees();
+  }, []);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
     }
-    fetchEmployees()
-  }, [])
+  };
 
-  const filtered = employees.filter((emp) => {
-    const matchesSearch =
-      search === "" ||
-      emp.name.toLowerCase().includes(search.toLowerCase()) ||
-      emp.surname.toLowerCase().includes(search.toLowerCase()) ||
-      emp.employeeNumber.toLowerCase().includes(search.toLowerCase()) ||
-      emp.position.toLowerCase().includes(search.toLowerCase()) ||
-      emp.user.email.toLowerCase().includes(search.toLowerCase())
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return " ↕";
+    return sortDirection === "asc" ? " ↑" : " ↓";
+  };
 
-    const matchesFilter =
-      filter === "all" ||
-      (filter === "active" && emp.isActive) ||
-      (filter === "inactive" && !emp.isActive)
+  const filtered = employees
+    .filter((emp) => {
+      const matchesSearch =
+        search === "" ||
+        emp.name.toLowerCase().includes(search.toLowerCase()) ||
+        emp.surname.toLowerCase().includes(search.toLowerCase()) ||
+        emp.employeeNumber.toLowerCase().includes(search.toLowerCase()) ||
+        emp.position.toLowerCase().includes(search.toLowerCase()) ||
+        emp.user.email.toLowerCase().includes(search.toLowerCase());
 
-    return matchesSearch && matchesFilter
-  })
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "active" && emp.isActive) ||
+        (filter === "inactive" && !emp.isActive);
+
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      let aVal = "";
+      let bVal = "";
+
+      switch (sortField) {
+        case "employeeNumber":
+          aVal = a.employeeNumber;
+          bVal = b.employeeNumber;
+          break;
+        case "name":
+          aVal = `${a.name} ${a.surname}`;
+          bVal = `${b.name} ${b.surname}`;
+          break;
+        case "position":
+          aVal = a.position;
+          bVal = b.position;
+          break;
+        case "email":
+          aVal = a.user.email;
+          bVal = b.user.email;
+          break;
+        case "role":
+          aVal = a.user.role;
+          bVal = b.user.role;
+          break;
+        case "status":
+          aVal = a.isActive ? "active" : "inactive";
+          bVal = b.isActive ? "active" : "inactive";
+          break;
+      }
+
+      return sortDirection === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    });
+
+  const SortableHeader = ({
+    field,
+    label,
+  }: {
+    field: SortField;
+    label: string;
+  }) => (
+    <th
+      className="text-left p-4 cursor-pointer hover:bg-gray-100 select-none"
+      onClick={() => handleSort(field)}
+    >
+      {label}
+      <span className="text-gray-400 text-xs">{getSortIcon(field)}</span>
+    </th>
+  );
 
   return (
     <div className="p-8">
@@ -73,12 +150,14 @@ export default function HREmployeesPage() {
           placeholder="Search by name, employee number, position or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border rounded-lg p-2 w-full text-sm"
+          className="border rounded-lg p-2 w-full text-sm border-black"
         />
         <select
           value={filter}
-          onChange={(e) => setFilter(e.target.value as "all" | "active" | "inactive")}
-          className="border rounded-lg p-2 text-sm min-w-32"
+          onChange={(e) =>
+            setFilter(e.target.value as "all" | "active" | "inactive")
+          }
+          className="border rounded-lg p-2 text-sm min-w-32 border-black"
         >
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
@@ -94,17 +173,17 @@ export default function HREmployeesPage() {
       {loading ? (
         <div className="text-center py-8 text-gray-500">Loading...</div>
       ) : (
-        <div className="rounded-xl border overflow-hidden">
+        <div className="rounded-xl border overflow-hidden bg-white">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-left p-4">Employee #</th>
-                <th className="text-left p-4">Name</th>
-                <th className="text-left p-4">Position</th>
-                <th className="text-left p-4">Email</th>
+                <SortableHeader field="employeeNumber" label="Employee #" />
+                <SortableHeader field="name" label="Name" />
+                <SortableHeader field="position" label="Position" />
+                <SortableHeader field="email" label="Email" />
                 <th className="text-left p-4">Manager</th>
-                <th className="text-left p-4">Role</th>
-                <th className="text-left p-4">Status</th>
+                <SortableHeader field="role" label="Role" />
+                <SortableHeader field="status" label="Status" />
               </tr>
             </thead>
             <tbody>
@@ -154,5 +233,5 @@ export default function HREmployeesPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

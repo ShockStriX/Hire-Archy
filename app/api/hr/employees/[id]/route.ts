@@ -9,7 +9,10 @@ export async function GET(
 ) {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "HR") {
+    if (
+      !session ||
+      (session.user.role !== "HR" && session.user.role !== "MANAGER")
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -68,7 +71,10 @@ export async function PATCH(
 ) {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "HR") {
+    if (
+      !session ||
+      (session.user.role !== "HR" && session.user.role !== "MANAGER")
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -134,8 +140,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    // ← this was missing
     const session = await auth();
-    if (!session || session.user.role !== "HR") {
+    if (
+      !session ||
+      (session.user.role !== "HR" && session.user.role !== "MANAGER")
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -151,7 +161,7 @@ export async function DELETE(
 
     await prisma.employee.update({
       where: { id },
-      data: { isActive: !employee.isActive }, // Toggle instead of always false
+      data: { isActive: !employee.isActive },
     });
 
     return NextResponse.json({ success: true, isActive: !employee.isActive });

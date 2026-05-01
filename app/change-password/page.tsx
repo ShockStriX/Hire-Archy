@@ -60,7 +60,7 @@ function ChangePasswordContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md p-8 rounded-xl shadow-md">
+      <div className="w-full max-w-md p-8 rounded-xl shadow-md bg-white">
         <h1 className="text-2xl font-bold mb-2">Change Password</h1>
         <p className="text-gray-500 mb-6">
           Please set a new password before continuing.
@@ -81,6 +81,7 @@ function ChangePasswordContent() {
             placeholder="Confirm New Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             className="border rounded-lg p-2 w-full"
           />
 

@@ -1,33 +1,37 @@
-import { NextResponse } from "next/server"
-import { put } from "@vercel/blob"
-import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
+import { NextResponse } from "next/server";
+import { put } from "@vercel/blob";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   try {
-    const formData = await req.formData()
-    const file = formData.get("file") as File
-    const email = formData.get("email") as string
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
+    const email = formData.get("email") as string;
 
     if (!file || !email) {
-      return NextResponse.json({ error: "Missing file or email" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Missing file or email" },
+        { status: 400 },
+      );
     }
 
-    const blob = await put(`banners/${email}`, file, {
+    const timestamp = Date.now();
+    const blob = await put(`banners/${email}-${timestamp}`, file, {
       access: "public",
       allowOverwrite: true,
-    })
+    });
 
     await prisma.user.update({
       where: { email },
       data: { bannerUrl: blob.url },
-    })
+    });
 
-    revalidatePath("user-data")
+    revalidatePath("user-data");
 
-    return NextResponse.json({ bannerUrl: blob.url })
+    return NextResponse.json({ bannerUrl: blob.url });
   } catch (error) {
-    console.error("Banner upload error:", error)
-    return NextResponse.json({ error: String(error) }, { status: 500 })
+    console.error("Banner upload error:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
