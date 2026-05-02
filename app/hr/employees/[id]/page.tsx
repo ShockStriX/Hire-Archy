@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import crypto from "crypto";
@@ -63,6 +63,7 @@ export default function EmployeeProfilePage() {
   const isOwnProfile = session?.user?.email === employee?.user.email;
 
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [name, setName] = useState("");
@@ -76,6 +77,9 @@ export default function EmployeeProfilePage() {
   const [managerId, setManagerId] = useState("");
   const [role, setRole] = useState<"HR" | "MANAGER" | "EMPLOYEE">("EMPLOYEE");
   const [email, setEmail] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const updateBirthDate = (day: string, month: string, year: string) => {
     if (!day || !month || !year) return;
@@ -263,6 +267,31 @@ export default function EmployeeProfilePage() {
     setBirthDate(date.toISOString().split("T")[0]);
   };
 
+  //Deleting an employee from DB
+  const handleHardDelete = async () => {
+    if (!employee) return;
+
+    const expectedName = `${employee.name} ${employee.surname}`;
+    if (deleteConfirmName !== expectedName) {
+      return;
+    }
+
+    setDeleting(true);
+
+    const res = await fetch(`/api/hr/employees/${id}/delete`, {
+      method: "DELETE",
+    });
+
+    if (res.ok) {
+      router.push("/hr/employees");
+    } else {
+      const data = await res.json();
+      setError(data.error || "Failed to delete employee");
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   if (loading)
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -346,6 +375,14 @@ export default function EmployeeProfilePage() {
                       {employee.isActive ? "Deactivate" : "Reactivate"}
                     </button>
                   )}
+                  {isHR && !employee.isActive && (
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="bg-gray-800 text-white rounded-lg px-4 py-2 text-sm"
+                    >
+                      Delete Permanently
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
@@ -369,7 +406,6 @@ export default function EmployeeProfilePage() {
               )}
             </div>
           </div>
-
           {!employee.isActive && (
             <div className="bg-red-50 text-red-600 rounded-lg px-4 py-2 text-sm mb-4">
               This employee has been deactivated. Editing and password reset are
@@ -658,6 +694,62 @@ export default function EmployeeProfilePage() {
                 className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm w-full"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-xl">
+            <h2 className="text-xl font-bold mb-2 text-red-600">
+              Delete Employee Permanently
+            </h2>
+            <p className="text-gray-500 mb-2">
+              This action <span className="font-bold">cannot be undone</span>.
+              This will permanently delete{" "}
+              <span className="font-bold">
+                {employee.name} {employee.surname}
+              </span>
+              's account and all associated data.
+            </p>
+            <p className="text-gray-500 mb-6">
+              Please type{" "}
+              <span className="font-bold">
+                {employee.name} {employee.surname}
+              </span>{" "}
+              to confirm.
+            </p>
+
+            <input
+              type="text"
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              placeholder={`${employee.name} ${employee.surname}`}
+              className="border rounded-lg p-2 w-full mb-4 text-sm"
+            />
+
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmName("");
+                }}
+                className="bg-gray-200 text-gray-800 rounded-lg px-4 py-2 text-sm w-full"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleHardDelete}
+                disabled={
+                  deleteConfirmName !==
+                    `${employee.name} ${employee.surname}` || deleting
+                }
+                className="bg-red-600 text-white rounded-lg px-4 py-2 text-sm w-full disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete Permanently"}
               </button>
             </div>
           </div>

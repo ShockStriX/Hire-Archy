@@ -269,7 +269,7 @@ export default function OrganogramPage() {
       : null;
 
     return (
-      <div className="flex flex-col flex-1 relative">
+      <div className="flex flex-col flex-1 relative overflow-hidden">
         {/* Fixed header */}
         <div className="fixed top-28 left-0 right-0 z-30 bg-[#6366F1] border-b flex justify-between items-center px-8 py-4">
           <h1 className="text-2xl font-bold">My Position</h1>
@@ -395,7 +395,7 @@ export default function OrganogramPage() {
 
   // HR and Manager view
   return (
-    <div className="flex flex-col flex-1 relative">
+    <div className="flex flex-col flex-1 relative overflow-hidden">
       {/* Fixed header */}
       <div className="fixed top-20 left-0 right-0 z-30 bg-[#EEF2F7] border-b flex justify-between items-center px-8 py-4">
         <h1 className="text-2xl font-bold">Organogram</h1>
@@ -477,7 +477,7 @@ export default function OrganogramPage() {
       {/* Node click modal - HR and Manager view */}
       {selected && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-hidden"
           onClick={() => setSelected(null)}
         >
           <div
@@ -504,7 +504,7 @@ export default function OrganogramPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 overflow-hidden">
               {selected.id !== data?.currentEmployeeId &&
                 selected.id !== data?.manager?.id && ( // Hide for manager above
                   <button

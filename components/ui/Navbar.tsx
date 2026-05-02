@@ -47,6 +47,18 @@ export default function Navbar() {
             >
               Organogram
             </Link>
+            <Link
+              href="/leave"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
+            >
+              Leave
+            </Link>
+            <Link
+              href="/manager/leave"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
+            >
+              Team Leave
+            </Link>
           </>
         )}
 
@@ -64,6 +76,18 @@ export default function Navbar() {
             >
               Organogram
             </Link>
+            <Link
+              href="/leave"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
+            >
+              Leave
+            </Link>
+            <Link
+              href="/manager/leave"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
+            >
+              Team Leave
+            </Link>
           </>
         )}
 
@@ -80,6 +104,12 @@ export default function Navbar() {
               className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
             >
               Organogram
+            </Link>
+            <Link
+              href="/leave"
+              className="text-base text-[#E6EDF3] hover:text-[#3B82F6]"
+            >
+              Leave
             </Link>
           </>
         )}

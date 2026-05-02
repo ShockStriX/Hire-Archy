@@ -46,7 +46,10 @@ model Employee {
   subordinates      Employee[] @relation("ReportingLine")
 
   userId            String    @unique
-  user              User      @relation(fields: [userId], references: [id])
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  leaveBalance      LeaveBalance?
+  leaveRequests     LeaveRequest[]
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -55,4 +58,42 @@ model Employee {
 model EmployeeNumberSequence {
   id            Int    @id @default(autoincrement())
   lastNumber    Int    @default(0)
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model LeaveBalance {
+  id              String    @id @default(cuid())
+  employeeId      String    @unique
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  annualBalance   Decimal   @default(0)
+  sickBalance     Decimal   @default(15)
+  lastAccrualDate DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model LeaveRequest {
+  id          String      @id @default(cuid())
+  employeeId  String
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType   LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  days        Decimal
+  status      LeaveStatus @default(PENDING)
+  reason      String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
