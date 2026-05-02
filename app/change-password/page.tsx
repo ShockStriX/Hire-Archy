@@ -13,7 +13,7 @@ function ChangePasswordContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
   const normalizedEmail = email?.toLowerCase().trim();
-  const { update } = useSession();
+  const { update, data: sessionData } = useSession();
 
   const handleSubmit = async () => {
     setError("");
@@ -40,7 +40,20 @@ function ChangePasswordContent() {
       } else {
         await update({ firstLogin: false });
         await new Promise((resolve) => setTimeout(resolve, 500));
-        router.push(`/2fa-setup?email=${encodeURIComponent(normalizedEmail!)}`);
+
+        const statusRes = await fetch("/api/2fa/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: normalizedEmail }),
+        });
+        const statusData = await statusRes.json();
+
+        if (statusData.twoFactorEnabled) {
+          const role = sessionData?.user?.role;
+          router.push(role === "HR" ? "/hr/dashboard" : "/dashboard");
+        } else {
+          router.push(`/2fa-setup?email=${encodeURIComponent(normalizedEmail!)}`);
+        }
       }
     } catch (err) {
       console.error("Fetch failed with error:", err);
