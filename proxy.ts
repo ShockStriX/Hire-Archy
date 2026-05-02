@@ -24,20 +24,23 @@ export default auth((req) => {
   if (isLoggedIn && !isAuthPage && !isOnboardingPage) {
     // First login - force password change
     if (firstLogin) {
+      const email = req.auth?.user?.email?.toLowerCase().trim();
       return NextResponse.redirect(
-        new URL(`/change-password?email=${req.auth?.user?.email}`, req.nextUrl),
+        new URL(`/change-password?email=${email}`, req.nextUrl),
       );
     }
     // 2FA not set up
     if (!twoFactorEnabled) {
+      const email = req.auth?.user?.email?.toLowerCase().trim();
       return NextResponse.redirect(
-        new URL(`/2fa-setup?email=${req.auth?.user?.email}`, req.nextUrl),
+        new URL(`/2fa-setup?email=${email}`, req.nextUrl),
       );
     }
     // 2FA not verified
     if (twoFactorEnabled && !twoFactorVerified) {
+      const email = req.auth?.user?.email?.toLowerCase().trim();
       return NextResponse.redirect(
-        new URL(`/verify-2fa?email=${req.auth?.user?.email}`, req.nextUrl),
+        new URL(`/verify-2fa?email=${email}`, req.nextUrl),
       );
     }
     // Block non-HR users from HR pages, but allow managers to view employee profiles
