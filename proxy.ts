@@ -22,27 +22,34 @@ export default auth((req) => {
   }
 
   if (isLoggedIn && !isAuthPage && !isOnboardingPage) {
-    // First login - force password change
+    // First login - force password change FIRST
     if (firstLogin) {
       return NextResponse.redirect(
-        new URL(`/change-password?email=${req.auth?.user?.email}`, req.nextUrl),
+        new URL(
+          `/change-password?email=${req.auth?.user?.email?.toLowerCase().trim()}`,
+          req.nextUrl,
+        ),
       );
     }
-    // 2FA not set up
+    // Only after password is changed, check 2FA
     if (!twoFactorEnabled) {
       return NextResponse.redirect(
-        new URL(`/2fa-setup?email=${req.auth?.user?.email}`, req.nextUrl),
+        new URL(
+          `/2fa-setup?email=${req.auth?.user?.email?.toLowerCase().trim()}`,
+          req.nextUrl,
+        ),
       );
     }
-    // 2FA not verified
     if (twoFactorEnabled && !twoFactorVerified) {
       return NextResponse.redirect(
-        new URL(`/verify-2fa?email=${req.auth?.user?.email}`, req.nextUrl),
+        new URL(
+          `/verify-2fa?email=${req.auth?.user?.email?.toLowerCase().trim()}`,
+          req.nextUrl,
+        ),
       );
     }
     // Block non-HR users from HR pages, but allow managers to view employee profiles
     if (pathname.startsWith("/hr") && role !== "HR") {
-      // Allow managers to access individual employee profiles
       if (role === "MANAGER" && pathname.startsWith("/hr/employees/")) {
         return NextResponse.next();
       }

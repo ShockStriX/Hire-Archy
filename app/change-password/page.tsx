@@ -12,8 +12,8 @@ function ChangePasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
-  const normalizedEmail = email?.toLowerCase().trim()
-  const { update } = useSession();
+  const normalizedEmail = email?.toLowerCase().trim();
+  const { update, data: sessionData } = useSession();
 
   const handleSubmit = async () => {
     setError("");
@@ -25,37 +25,40 @@ function ChangePasswordContent() {
 
     setLoading(true);
 
-    const res = await fetch("/api/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: normalizedEmail, newPassword }),
-    });
+    try {
+      const res = await fetch("/api/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail, newPassword }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.error || "Something went wrong");
-      setLoading(false);
-    } else {
-      await update({ firstLogin: false });
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Check session to see if 2FA is already set up
-      const sessionRes = await fetch("/api/auth/session");
-      const sessionData = await sessionRes.json();
-
-      if (sessionData?.user?.twoFactorEnabled) {
-        // 2FA already set up, go straight to dashboard
-        if (sessionData?.user?.role === "HR") {
-          router.push("/hr/dashboard");
-        } else {
-          router.push("/dashboard");
-        }
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+        setLoading(false);
       } else {
-        // 2FA not set up, go to setup
-        router.push(`/2fa-setup?email=${encodeURIComponent(email!)}`);
+        await update({ firstLogin: false });
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const statusRes = await fetch("/api/2fa/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: normalizedEmail }),
+        });
+        const statusData = await statusRes.json();
+
+        if (statusData.twoFactorEnabled) {
+          const role = sessionData?.user?.role;
+          window.location.href = role === "HR" ? "/hr/dashboard" : "/dashboard";
+        } else {
+          window.location.href = `/2fa-setup?email=${encodeURIComponent(normalizedEmail!)}`;
+        }
       }
+    } catch (err) {
+      console.error("Fetch failed with error:", err);
+      setError("Network error - please try again");
+      setLoading(false);
     }
   };
 

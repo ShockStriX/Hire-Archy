@@ -39,6 +39,30 @@ export async function PATCH(
     }
 
     if (status === "APPROVED") {
+      // Check for overlapping approved requests
+      const overlapping = await prisma.leaveRequest.findFirst({
+        where: {
+          employeeId: leaveRequest.employeeId,
+          id: { not: id }, // Exclude current request
+          status: "APPROVED",
+          OR: [
+            {
+              startDate: { lte: leaveRequest.endDate },
+              endDate: { gte: leaveRequest.startDate },
+            },
+          ],
+        },
+      });
+
+      if (overlapping) {
+        return NextResponse.json(
+          {
+            error: "Employee already has approved leave for this period",
+          },
+          { status: 400 },
+        );
+      }
+
       if (leaveRequest.leaveType === "ANNUAL") {
         await prisma.leaveBalance.update({
           where: { employeeId: leaveRequest.employeeId },
