@@ -207,6 +207,13 @@ export default function OrganogramPage() {
     fetchOrganogram();
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, []);
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       setIsDragging(true);
