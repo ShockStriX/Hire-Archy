@@ -16,9 +16,6 @@ function ChangePasswordContent() {
   const { update } = useSession();
 
   const handleSubmit = async () => {
-    console.log("handleSubmit called");
-    console.log("email:", normalizedEmail);
-    console.log("password length:", newPassword.length);
     setError("");
 
     if (newPassword !== confirmPassword) {
@@ -29,15 +26,13 @@ function ChangePasswordContent() {
     setLoading(true);
 
     try {
-      console.log("About to fetch...");
       const res = await fetch("/api/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: normalizedEmail, newPassword }),
       });
-      console.log("Fetch completed, status:", res.status);
+
       const data = await res.json();
-      console.log("Data:", data);
 
       if (!res.ok) {
         setError(data.error || "Something went wrong");
@@ -45,20 +40,7 @@ function ChangePasswordContent() {
       } else {
         await update({ firstLogin: false });
         await new Promise((resolve) => setTimeout(resolve, 500));
-        const sessionRes = await fetch("/api/auth/session");
-        const sessionData = await sessionRes.json();
-
-        if (sessionData?.user?.twoFactorEnabled) {
-          if (sessionData?.user?.role === "HR") {
-            router.push("/hr/dashboard");
-          } else {
-            router.push("/dashboard");
-          }
-        } else {
-          router.push(
-            `/2fa-setup?email=${encodeURIComponent(normalizedEmail!)}`,
-          );
-        }
+        router.push(`/2fa-setup?email=${encodeURIComponent(normalizedEmail!)}`);
       }
     } catch (err) {
       console.error("Fetch failed with error:", err);
