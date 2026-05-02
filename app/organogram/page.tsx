@@ -477,7 +477,7 @@ export default function OrganogramPage() {
       {/* Node click modal - HR and Manager view */}
       {selected && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-hidden"
           onClick={() => setSelected(null)}
         >
           <div
@@ -504,7 +504,7 @@ export default function OrganogramPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 overflow-hidden">
               {selected.id !== data?.currentEmployeeId &&
                 selected.id !== data?.manager?.id && ( // Hide for manager above
                   <button

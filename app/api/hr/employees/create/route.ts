@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { generateEmployeeNumber } from "@/lib/employeeNumber";
 import { generateInitialPassword, validateEmail } from "@/lib/validation";
 import { auth } from "@/auth";
+import { calculateInitialAccrual } from "@/lib/leave"
 
 export async function POST(req: Request) {
   try {
@@ -83,6 +84,19 @@ export async function POST(req: Request) {
           position,
           managerId: managerId || null,
           userId: user.id,
+        },
+      });
+
+      // Calculate initial pro-rated annual leave accrual
+      const initialAccrual = calculateInitialAccrual(new Date(birthDate));
+
+      // Create leave balance for new employee
+      await tx.leaveBalance.create({
+        data: {
+          employeeId: employee.id,
+          annualBalance: initialAccrual,
+          sickBalance: 15,
+          lastAccrualDate: new Date(),
         },
       });
 

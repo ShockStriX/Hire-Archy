@@ -50,6 +50,11 @@ export default auth((req) => {
     }
   }
 
+  // Block employees from manager leave page
+  if (pathname.startsWith("/manager") && role === "EMPLOYEE") {
+    return NextResponse.redirect(new URL("/leave", req.nextUrl));
+  }
+
   // Logged in and fully verified, redirect away from login
   if (isLoggedIn && isAuthPage && twoFactorVerified) {
     if (role === "HR") {
