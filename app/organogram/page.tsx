@@ -269,7 +269,7 @@ export default function OrganogramPage() {
       : null;
 
     return (
-      <div className="flex flex-col flex-1 relative">
+      <div className="flex flex-col flex-1 relative overflow-hidden">
         {/* Fixed header */}
         <div className="fixed top-28 left-0 right-0 z-30 bg-[#6366F1] border-b flex justify-between items-center px-8 py-4">
           <h1 className="text-2xl font-bold">My Position</h1>
@@ -395,7 +395,7 @@ export default function OrganogramPage() {
 
   // HR and Manager view
   return (
-    <div className="flex flex-col flex-1 relative">
+    <div className="flex flex-col flex-1 relative overflow-hidden">
       {/* Fixed header */}
       <div className="fixed top-20 left-0 right-0 z-30 bg-[#EEF2F7] border-b flex justify-between items-center px-8 py-4">
         <h1 className="text-2xl font-bold">Organogram</h1>
