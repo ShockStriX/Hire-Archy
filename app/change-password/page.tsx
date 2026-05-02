@@ -12,10 +12,13 @@ function ChangePasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
-  const normalizedEmail = email?.toLowerCase().trim()
+  const normalizedEmail = email?.toLowerCase().trim();
   const { update } = useSession();
 
   const handleSubmit = async () => {
+    console.log("handleSubmit called");
+    console.log("email:", normalizedEmail);
+    console.log("password length:", newPassword.length);
     setError("");
 
     if (newPassword !== confirmPassword) {
