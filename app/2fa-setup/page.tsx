@@ -14,11 +14,11 @@ function TwoFactorSetupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
-  const normalizedEmail = email?.toLowerCase().trim()
+  const normalizedEmail = email?.toLowerCase().trim();
   const { update } = useSession();
 
   useEffect(() => {
-    if (!email) return;
+    if (!normalizedEmail) return;
 
     const setupTwoFactor = async () => {
       const res = await fetch("/api/2fa/setup", {
@@ -33,7 +33,7 @@ function TwoFactorSetupContent() {
     };
 
     setupTwoFactor();
-  }, [email]);
+  }, [normalizedEmail]);
 
   const handleVerify = async () => {
     setError("");
@@ -52,6 +52,9 @@ function TwoFactorSetupContent() {
       setLoading(false);
     } else {
       await update({ twoFactorVerified: true, twoFactorEnabled: true });
+
+      //Additional delay for the variables to update
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const sessionRes = await fetch("/api/auth/session");
       const sessionData = await sessionRes.json();
