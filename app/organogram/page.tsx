@@ -278,7 +278,7 @@ export default function OrganogramPage() {
     return (
       <div className="flex flex-col flex-1 relative overflow-hidden">
         {/* Fixed header */}
-        <div className="fixed top-28 left-0 right-0 z-30 bg-[#6366F1] border-b flex justify-between items-center px-8 py-4">
+        <div className="fixed top-28 left-0 right-0 z-30 bg-[#f5f7fa] border-b flex justify-between items-center px-8 py-4">
           <h1 className="text-2xl font-bold">My Position</h1>
           <div className="flex gap-2">
             <button
