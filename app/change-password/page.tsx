@@ -50,9 +50,9 @@ function ChangePasswordContent() {
 
         if (statusData.twoFactorEnabled) {
           const role = sessionData?.user?.role;
-          router.push(role === "HR" ? "/hr/dashboard" : "/dashboard");
+          window.location.href = role === "HR" ? "/hr/dashboard" : "/dashboard";
         } else {
-          router.push(`/2fa-setup?email=${encodeURIComponent(normalizedEmail!)}`);
+          window.location.href = `/2fa-setup?email=${encodeURIComponent(normalizedEmail!)}`;
         }
       }
     } catch (err) {
