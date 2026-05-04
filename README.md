@@ -8,8 +8,9 @@ a clear and functional way to view an organisation’s structure at any scale. M
 employee data, viewing hierarchical structure, and managing leave processes have never 
 been this easy. 
 
-![User Guide](/public/Hire-Archy User Guide.pdf)
-![Technical Documentation](/public/Hire-Archy Technical Documentation.pdf)
+[User Guide](/public/Hire-Archy%20User%20Guide.pdf)
+
+[Technical Documentation](/public/Hire-Archy%20Technical%20Documentation.pdf)
 
 ## Live Website
-![Hire-Archy](https://hire-archy-epi.vercel.app)
+[Hire-Archy](https://hire-archy-epi.vercel.app)
