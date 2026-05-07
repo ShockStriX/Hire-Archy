@@ -90,11 +90,26 @@ export async function PATCH(
       role,
       email,
     } = await req.json();
-    const normalizedEmail = email?.toLowerCase().trim()
+    const normalizedEmail = email?.toLowerCase().trim();
 
-    // Check if email is already taken by another user
+    // Check for circular reference BEFORE updating
+    if (managerId) {
+      const isCircular = await wouldCreateCircularReference(id, managerId);
+      if (isCircular) {
+        return NextResponse.json(
+          {
+            error: "Unable to assign manager, reporting structure loop",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Check if email is already taken
     if (normalizedEmail) {
-      const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+      const existing = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+      });
       if (
         existing &&
         existing.id !==
@@ -119,7 +134,6 @@ export async function PATCH(
       },
     });
 
-    // Update user role and email
     await prisma.user.update({
       where: { id: employee.userId },
       data: {
@@ -133,6 +147,26 @@ export async function PATCH(
     console.error("Update employee error:", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
+}
+
+// Move helper function OUTSIDE and ABOVE the PATCH handler
+async function wouldCreateCircularReference(
+  employeeId: string,
+  newManagerId: string,
+): Promise<boolean> {
+  let currentId: string | null = newManagerId;
+
+  while (currentId !== null) {
+    if (currentId === employeeId) return true;
+    const current: { managerId: string | null } | null =
+      await prisma.employee.findUnique({
+        where: { id: currentId },
+        select: { managerId: true },
+      });
+    currentId = current?.managerId ?? null;
+  }
+
+  return false;
 }
 
 // DELETE soft delete employee
