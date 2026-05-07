@@ -77,6 +77,7 @@ export default function EmployeeProfilePage() {
   const [managerId, setManagerId] = useState("");
   const [role, setRole] = useState<"HR" | "MANAGER" | "EMPLOYEE">("EMPLOYEE");
   const [email, setEmail] = useState("");
+  const [managerError, setManagerError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -177,8 +178,14 @@ export default function EmployeeProfilePage() {
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error || "Something went wrong");
+      const msg = data.error || "Something went wrong";
+      if (msg.toLowerCase().includes("circular")) {
+        setManagerError(msg);
+      } else {
+        setError(msg);
+      }
     } else {
+      setManagerError("");
       setSuccess("Employee updated successfully!");
       setEditing(false);
       await refreshEmployee();
@@ -253,6 +260,7 @@ export default function EmployeeProfilePage() {
   const handleCancelEdit = () => {
     if (!employee) return;
     setEditing(false);
+    setManagerError("");
     setName(employee.name);
     setSurname(employee.surname);
     setGrossSalary(employee.gross_salary.toString());
@@ -598,18 +606,26 @@ export default function EmployeeProfilePage() {
             <div className="md:col-span-2">
               <p className="text-xs text-gray-500 mb-1">Reporting Manager</p>
               {editing ? (
-                <select
-                  value={managerId}
-                  onChange={(e) => setManagerId(e.target.value)}
-                  className="border rounded-lg p-2 w-full text-sm"
-                >
-                  <option value="">No Manager</option>
-                  {managers.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} {m.surname} - {m.position} ({m.employeeNumber})
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    value={managerId}
+                    onChange={(e) => {
+                      setManagerId(e.target.value);
+                      setManagerError("");
+                    }}
+                    className={`border rounded-lg p-2 w-full text-sm ${managerError ? "border-red-500 bg-red-50" : ""}`}
+                  >
+                    <option value="">No Manager</option>
+                    {managers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} {m.surname} - {m.position} ({m.employeeNumber})
+                      </option>
+                    ))}
+                  </select>
+                  {managerError && (
+                    <p className="text-red-500 text-xs mt-1">{managerError}</p>
+                  )}
+                </>
               ) : (
                 <p className="font-medium">
                   {employee.manager
